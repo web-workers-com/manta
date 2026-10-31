@@ -53,11 +53,11 @@ Each pane can have several tabs. A tab shows one folder – on your Mac, on a se
 
 | Action | How |
 |---|---|
-| New tab | **⌘T** or the **+** button in the path bar |
+| New tab | **⌘T** or the **+** button in the path bar, or **New Tab** in the Dock menu (right-click Manta's icon in the Dock) |
 | Close tab | **⌘W** or the **×** on the tab (appears on hover) |
 | Switch tab | Click the tab |
 
-The new tab shows the same folder as the current one. **Go to Path…** (**⇧⌘G**) opens a folder straight in a new tab (see [Navigation](04-navigation.md#gehe-zum-pfad)).
+The new tab shows the same folder as the current one – or the folder you chose under [**New tabs open in**](16-einstellungen.md#dateien). **Go to Path…** (**⇧⌘G**) opens a folder straight in a new tab (see [Navigation](04-navigation.md#gehe-zum-pfad)).
 
 > [!NOTE]
 > As in Finder, **⌘T** opens a new tab. Before this version it was **⇧⌘T**, and **⌘T** showed the transfers – that is **⌥⌘L** now.

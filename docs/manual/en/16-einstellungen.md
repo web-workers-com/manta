@@ -42,6 +42,7 @@ Only available when Manta runs from the **Applications** folder ("Move Manta to 
 |---|---|
 | **Show hidden files** | For new tabs and at launch. **⇧⌘.** shows or hides them in the current tab. |
 | **Open archives as folders** | Return or double-click browses ZIP and TAR archives in the pane (read-only). **⌥↩** opens them with the default app. See [Archives](10-archive.md). |
+| **New tabs open in** | Where **⌘T**, **New Tab** in the Dock menu and a start without a saved session open: **Same folder** (default; your home folder at launch), **Home**, **Desktop**, **Documents**, **Downloads** or **Other…** (a folder of your choice). Like Finder's "New Finder windows show". |
 | **Remember view per folder** | Each folder opens in the view it was last shown in (Icons, List, Columns, Gallery). Off (default): the view belongs to the pane. See [Views](03-ansichten.md#pro-ordner). |
 | **Mouse side buttons** | The thumb buttons go back and forward in the pane under the pointer, like **⌘[** and **⌘]**, in Help too. **Back / Forward** (default), **Forward / Back (swapped)** or **Off**. |
 | **Load thumbnails for server files** | Downloads small images (under 5 MB) in the background. Off (default): server files show their type icon. See [Thumbnails](03-ansichten.md#server-vorschaubilder). |

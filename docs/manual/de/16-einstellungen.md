@@ -42,6 +42,7 @@ Nur verfügbar, wenn Manta aus dem Ordner **Programme** läuft („Bewege Manta 
 |---|---|
 | **Unsichtbare Dateien einblenden** | Für neue Tabs und beim Start. **⇧⌘.** blendet sie im aktuellen Tab ein oder aus. |
 | **Archive als Ordner öffnen** | ↩ oder Doppelklick zeigt ZIP- und TAR-Archive im Bereich an (schreibgeschützt). **⌥↩** öffnet sie mit der Standard-App. Siehe [Archive](10-archive.md). |
+| **Neue Tabs öffnen in** | Wo **⌘T**, **Neuer Tab** im Dock-Menü und ein Start ohne gespeicherte Sitzung öffnen: **Gleicher Ordner** (Standard; beim Start der Benutzerordner), **Benutzerordner**, **Schreibtisch**, **Dokumente**, **Downloads** oder **Anderer …** (ein Ordner deiner Wahl). Wie „Neue Finder-Fenster zeigen“ im Finder. |
 | **Ansicht pro Ordner merken** | Jeder Ordner öffnet sich in der Darstellung, in der er zuletzt gezeigt wurde (Symbole, Liste, Spalten, Galerie). Aus (Standard): Die Ansicht gehört zum Bereich. Siehe [Ansichten](03-ansichten.md#pro-ordner). |
 | **Maus-Seitentasten** | Die Daumentasten gehen im Bereich unter dem Zeiger zurück und vorwärts, wie **⌘[** und **⌘]**, auch in der Hilfe. **Zurück / Vorwärts** (Standard), **Vorwärts / Zurück (vertauscht)** oder **Aus**. |
 | **Vorschaubilder für Server-Dateien laden** | Lädt kleine Bilder (unter 5 MB) im Hintergrund. Aus (Standard): Server-Dateien zeigen ihr Typsymbol. Siehe [Vorschaubilder](03-ansichten.md#server-vorschaubilder). |

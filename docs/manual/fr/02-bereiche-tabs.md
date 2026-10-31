@@ -53,11 +53,11 @@ Chaque sous-fenêtre peut contenir plusieurs onglets. Un onglet affiche un dossi
 
 | Action | Comment |
 |---|---|
-| Nouvel onglet | **⌘T** ou le bouton **+** dans la barre du chemin d’accès |
+| Nouvel onglet | **⌘T** ou le bouton **+** dans la barre du chemin d’accès, ou **Nouvel onglet** dans le menu du Dock (clic droit sur l’icône de Manta dans le Dock) |
 | Fermer l’onglet | **⌘W** ou le **×** sur l’onglet (apparaît au survol) |
 | Changer d’onglet | Cliquez sur l’onglet |
 
-Le nouvel onglet affiche le même dossier que l’onglet actuel. **Aller au chemin…** (**⇧⌘G**) ouvre un dossier directement dans un nouvel onglet (voir [Navigation](04-navigation.md#gehe-zum-pfad)).
+Le nouvel onglet affiche le même dossier que l’onglet actuel, ou le dossier choisi sous [**Les nouveaux onglets s’ouvrent dans**](16-einstellungen.md#dateien). **Aller au chemin…** (**⇧⌘G**) ouvre un dossier directement dans un nouvel onglet (voir [Navigation](04-navigation.md#gehe-zum-pfad)).
 
 > [!NOTE]
 > Comme dans le Finder, **⌘T** ouvre un nouvel onglet. Avant cette version, c’était **⇧⌘T**, et **⌘T** affichait les transferts – c’est désormais **⌥⌘L**.

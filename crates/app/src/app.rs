@@ -788,19 +788,6 @@ impl MantaApp {
         ctx.add_plugin(crate::a11y::SpeechCleanup);
 
         let local: SharedVfs = std::sync::Arc::new(manta_vfs::LocalFs::new());
-        let home = init
-            .start_dir
-            .clone()
-            .or_else(dirs::home_dir)
-            .map(|p| local_vfs_path(&p))
-            .unwrap_or_else(VfsPath::root);
-        let loc = Location {
-            fs: local.clone(),
-            conn: None,
-            path: home,
-            archive: None,
-        };
-
         let secrets = init
             .secrets
             .clone()
@@ -871,6 +858,21 @@ impl MantaApp {
         let layout = plugins.layout();
         let ctx_for_viewer = ctx.clone();
 
+        // Without a saved session the panes open in Settings → "New tabs
+        // open in" (the home folder for "Same folder").
+        let home = init
+            .start_dir
+            .clone()
+            .or_else(|| prefs.new_tabs.dir())
+            .or_else(dirs::home_dir)
+            .map(|p| local_vfs_path(&p))
+            .unwrap_or_else(VfsPath::root);
+        let loc = Location {
+            fs: local.clone(),
+            conn: None,
+            path: home,
+            archive: None,
+        };
         let session_path = match init.session_path {
             Some(p) => Some(p),
             None if cfg!(test) => None,
@@ -2657,15 +2659,23 @@ impl MantaApp {
                 }
             }
             Action::Refresh(side) => self.refresh(side),
-            Action::NewTab(side) => {
-                let id = self.next_id();
-                let pane = self.pane_mut(side);
-                let tab = pane.tab().duplicate(id);
-                pane.tabs.push(tab);
-                pane.active = pane.tabs.len() - 1;
-                self.activate(side);
-                self.refresh(side);
-            }
+            Action::NewTab(side) => match self.prefs.new_tabs.dir() {
+                // Settings → "New tabs open in" (like Finder's "New Finder
+                // windows show"); "Same folder" copies the tab.
+                Some(dir) => {
+                    self.activate(side);
+                    self.open_local_in_new_tab(dir);
+                }
+                None => {
+                    let id = self.next_id();
+                    let pane = self.pane_mut(side);
+                    let tab = pane.tab().duplicate(id);
+                    pane.tabs.push(tab);
+                    pane.active = pane.tabs.len() - 1;
+                    self.activate(side);
+                    self.refresh(side);
+                }
+            },
             Action::CloseTab(side, i) => {
                 let pane = self.pane_mut(side);
                 if pane.tabs.len() > 1 && i < pane.tabs.len() {
@@ -3123,7 +3133,7 @@ impl MantaApp {
             Action::EndSearch(side) => self.end_search(side),
             Action::RevealResult(side) => self.reveal_result(side),
             Action::SetAppearance(a) => {
-                let before = self.prefs;
+                let before = self.prefs.clone();
                 self.prefs.appearance = a;
                 self.prefs_changed(ctx, before);
             }
@@ -3926,7 +3936,8 @@ impl MantaApp {
     }
 
     /// A local folder in a new tab of the active pane (the volume menu's
-    /// "Open in New Tab", like Finder's "Open in New Window").
+    /// "Open in New Tab", like Finder's "Open in New Window"; ⌘T with a
+    /// folder set for new tabs).
     fn open_local_in_new_tab(&mut self, path: PathBuf) {
         let side = self.active;
         let id = self.next_id();
@@ -5238,7 +5249,7 @@ impl MantaApp {
     }
 
     fn settings_window(&mut self, ctx: &egui::Context) {
-        let before = self.prefs;
+        let before = self.prefs.clone();
         if self.settings.open && !self.settings_was_open {
             self.viewer.refresh();
         }

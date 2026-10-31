@@ -53,11 +53,11 @@ Cada panel puede tener varias pestañas. Una pestaña muestra una carpeta: en tu
 
 | Acción | Cómo |
 |---|---|
-| Nueva pestaña | **⌘T** o el botón **+** de la barra de ruta |
+| Nueva pestaña | **⌘T** o el botón **+** de la barra de ruta, o **Nueva pestaña** en el menú del Dock (clic secundario en el icono de Manta en el Dock) |
 | Cerrar pestaña | **⌘W** o la **×** de la pestaña (aparece al pasar el puntero) |
 | Cambiar de pestaña | Haz clic en la pestaña |
 
-La pestaña nueva muestra la misma carpeta que la actual. **Ir a la ruta…** (**⇧⌘G**) abre una carpeta directamente en una pestaña nueva (consulta [Navegación](04-navigation.md#gehe-zum-pfad)).
+La pestaña nueva muestra la misma carpeta que la actual, o la carpeta que hayas elegido en [**Las pestañas nuevas se abren en**](16-einstellungen.md#dateien). **Ir a la ruta…** (**⇧⌘G**) abre una carpeta directamente en una pestaña nueva (consulta [Navegación](04-navigation.md#gehe-zum-pfad)).
 
 > [!NOTE]
 > Como en Finder, **⌘T** abre una pestaña nueva. Antes de esta versión era **⇧⌘T**, y **⌘T** mostraba las transferencias; ahora eso es **⌥⌘L**.

@@ -53,11 +53,11 @@ Jeder Bereich kann mehrere Tabs haben. Ein Tab zeigt einen Ordner – lokal, auf
 
 | Aktion | So geht's |
 |---|---|
-| Neuer Tab | **⌘T** oder die **+**-Taste in der Pfadleiste |
+| Neuer Tab | **⌘T**, die **+**-Taste in der Pfadleiste oder **Neuer Tab** im Dock-Menü (Rechtsklick auf das Manta-Symbol im Dock) |
 | Tab schließen | **⌘W** oder das **×** auf dem Tab (erscheint beim Darüberfahren) |
 | Tab wechseln | Auf den Tab klicken |
 
-Der neue Tab zeigt denselben Ordner wie der aktuelle. **Gehe zum Pfad …** (**⇧⌘G**) öffnet einen Ordner direkt in einem neuen Tab (siehe [Navigation](04-navigation.md#gehe-zum-pfad)).
+Der neue Tab zeigt denselben Ordner wie der aktuelle – oder den Ordner, den du unter [**Neue Tabs öffnen in**](16-einstellungen.md#dateien) gewählt hast. **Gehe zum Pfad …** (**⇧⌘G**) öffnet einen Ordner direkt in einem neuen Tab (siehe [Navigation](04-navigation.md#gehe-zum-pfad)).
 
 > [!NOTE]
 > Wie im Finder öffnet **⌘T** einen neuen Tab. Vor dieser Version war das **⇧⌘T**, und **⌘T** blendete die Übertragungen ein – dafür gibt es jetzt **⌥⌘L**.

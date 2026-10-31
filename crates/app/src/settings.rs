@@ -16,7 +16,9 @@ use crate::dialogs::{self, DialogResult};
 use crate::i18n::Language;
 use crate::icons;
 use crate::plugin_ui;
-use crate::prefs::{Accent, Appearance, ConflictPref, DropAction, MouseNav, Prefs, SpaceAction};
+use crate::prefs::{
+    Accent, Appearance, ConflictPref, DropAction, MouseNav, NewTabFolder, Prefs, SpaceAction,
+};
 use crate::theme::{self, pal, radius, space, text, Palette};
 use crate::widgets::{self, ButtonKind};
 
@@ -79,6 +81,8 @@ pub struct SettingsView {
     has_settings: HashMap<String, bool>,
     /// File or folder picker running on a background thread.
     picking: Option<Receiver<Option<PathBuf>>>,
+    /// The picker for "New tabs open in" → "Other…".
+    picking_new_tabs: Option<Receiver<Option<PathBuf>>>,
     /// Scroll the page to this offset on the next frame (render tests).
     pub(crate) scroll_to: Option<f32>,
     /// Last frame's layout: the tab bar and the scroll area's visible rect
@@ -279,6 +283,25 @@ impl SettingsView {
         self.picking = Some(rx);
     }
 
+    /// "New tabs open in" → "Other…": a folder picker like the plugin one.
+    fn pick_new_tab_folder(&mut self, ctx: &egui::Context, current: Option<PathBuf>) {
+        if self.picking_new_tabs.is_some() {
+            return;
+        }
+        let (tx, rx) = mpsc::channel();
+        let ctx = ctx.clone();
+        std::thread::spawn(move || {
+            let mut dialog = rfd::AsyncFileDialog::new().set_title(t!("settings.new_tabs.choose"));
+            if let Some(dir) = current.or_else(dirs::home_dir) {
+                dialog = dialog.set_directory(dir);
+            }
+            let picked = block_on(dialog.pick_folder());
+            let _ = tx.send(picked.map(|h| h.path().to_path_buf()));
+            ctx.request_repaint();
+        });
+        self.picking_new_tabs = Some(rx);
+    }
+
     pub fn ui(
         &mut self,
         ctx: &egui::Context,
@@ -286,6 +309,17 @@ impl SettingsView {
         prefs: &mut Prefs,
     ) -> SettingsOutcome {
         let mut out = SettingsOutcome::default();
+        if let Some(rx) = &self.picking_new_tabs {
+            match rx.try_recv() {
+                Ok(Some(path)) => {
+                    self.picking_new_tabs = None;
+                    prefs.new_tabs = NewTabFolder::Other(path);
+                    out.prefs_changed = true;
+                }
+                Ok(None) | Err(mpsc::TryRecvError::Disconnected) => self.picking_new_tabs = None,
+                Err(mpsc::TryRecvError::Empty) => {}
+            }
+        }
         if let Some(rx) = &self.picking {
             match rx.try_recv() {
                 Ok(Some(path)) => {
@@ -347,8 +381,17 @@ impl SettingsView {
                 .inner_margin(egui::Margin::symmetric(20, space::LG as i8 + 2))
                 .show(ui, |ui| match self.tab {
                     SettingsTab::General => {
-                        out.prefs_changed |=
-                            general_ui(ui, prefs, self.viewer.as_ref(), &mut out.viewer_switch);
+                        let mut pick_folder = false;
+                        out.prefs_changed |= general_ui(
+                            ui,
+                            prefs,
+                            self.viewer.as_ref(),
+                            &mut out.viewer_switch,
+                            &mut pick_folder,
+                        );
+                        if pick_folder {
+                            self.pick_new_tab_folder(&ui.ctx().clone(), prefs.new_tabs.dir());
+                        }
                         ui.add_space(space::MD);
                         out.prefs_changed |=
                             cloud_section(ui, &mut self.cloud, prefs, &mut out.open_link);
@@ -1806,11 +1849,13 @@ fn section_header(ui: &mut egui::Ui, title: &str, help: &str) {
     crate::help::help_button_at(ui, r, help);
 }
 
+/// `pick_folder`: "New tabs open in" → "Other…" was chosen.
 fn general_ui(
     ui: &mut egui::Ui,
     prefs: &mut Prefs,
     viewer: Option<&crate::default_viewer::ViewerStatus>,
     viewer_switch: &mut Option<bool>,
+    pick_folder: &mut bool,
 ) -> bool {
     let p = pal(ui);
     let mut changed = false;
@@ -1923,6 +1968,36 @@ fn general_ui(
                     prefs.open_archives = !prefs.open_archives;
                     changed = true;
                 }
+            },
+        );
+        ui.add_space(space::SM);
+        setting_row(
+            ui,
+            t!("settings.new_tabs"),
+            t!("settings.new_tabs.note"),
+            |ui| {
+                egui::ComboBox::from_id_salt("new-tabs")
+                    .width(170.0)
+                    .selected_text(prefs.new_tabs.label())
+                    .show_ui(ui, |ui| {
+                        for f in NewTabFolder::PRESETS {
+                            let label = f.label();
+                            if ui.selectable_value(&mut prefs.new_tabs, f, label).changed() {
+                                changed = true;
+                            }
+                        }
+                        if let NewTabFolder::Other(_) = &prefs.new_tabs {
+                            let label = prefs.new_tabs.label();
+                            let _ = ui.selectable_label(true, label);
+                        }
+                        ui.separator();
+                        if ui
+                            .selectable_label(false, t!("settings.new_tabs.custom"))
+                            .clicked()
+                        {
+                            *pick_folder = true;
+                        }
+                    });
             },
         );
         ui.add_space(space::SM);

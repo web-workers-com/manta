@@ -429,7 +429,7 @@ mod native {
     use std::sync::OnceLock;
 
     use objc2::rc::Retained;
-    use objc2::runtime::{AnyObject, Bool, NSObject, NSObjectProtocol, ProtocolObject};
+    use objc2::runtime::{AnyObject, Bool, Imp, NSObject, NSObjectProtocol, ProtocolObject, Sel};
     use objc2::{define_class, msg_send, sel, MainThreadMarker, MainThreadOnly};
     use objc2_app_kit::{
         NSApplication, NSEvent, NSEventModifierFlags, NSMenu, NSMenuDelegate, NSMenuItem,
@@ -510,7 +510,9 @@ mod native {
                 if item.action() == Some(sel!(mantaToggleDefaultViewer:)) {
                     return Bool::new(VIEWER_STATE.load(Ordering::Relaxed) & 4 == 0);
                 }
-                if item.action() == Some(sel!(mantaRunCommand:)) {
+                if item.action() == Some(sel!(mantaRunCommand:))
+                    || item.action() == Some(sel!(mantaDockCommand:))
+                {
                     return Bool::new(super::tag_enabled(item.tag().max(0) as usize));
                 }
                 Bool::YES
@@ -524,6 +526,22 @@ mod native {
                 }
                 if let Some(item) = sender {
                     super::pick(item.tag().max(0) as usize);
+                }
+                if let Some(ctx) = CTX.get() {
+                    ctx.request_repaint();
+                }
+            }
+
+            /// An item of the Dock menu: like a menu bar command, and
+            /// Manta comes to the front (the Dock doesn't do that itself).
+            #[unsafe(method(mantaDockCommand:))]
+            fn dock_command(&self, sender: Option<&NSMenuItem>) {
+                if let Some(item) = sender {
+                    super::pick(item.tag().max(0) as usize);
+                }
+                if let Some(mtm) = MainThreadMarker::new() {
+                    let app = NSApplication::sharedApplication(mtm);
+                    let _: () = unsafe { msg_send![&*app, activateIgnoringOtherApps: true] };
                 }
                 if let Some(ctx) = CTX.get() {
                     ctx.request_repaint();
@@ -639,11 +657,70 @@ mod native {
         static COMMAND_MENUS_LOCALE: std::cell::Cell<u8> = const { std::cell::Cell::new(u8::MAX) };
         /// The Help menu's title item, the menu and its "Manta Manual" item.
         static HELP_ITEMS: RefCell<Option<HelpItems>> = const { RefCell::new(None) };
+        /// The Dock menu and its "New Tab" item (retitled with the language).
+        static DOCK_MENU: RefCell<Option<(Retained<NSMenu>, Retained<NSMenuItem>)>> =
+            const { RefCell::new(None) };
     }
 
     fn app_menu(mtm: MainThreadMarker) -> Option<Retained<NSMenu>> {
         let app = NSApplication::sharedApplication(mtm);
         app.mainMenu()?.itemAtIndex(0)?.submenu()
+    }
+
+    /// The Dock icon's menu: "New Tab" (Finder has "New Finder Window";
+    /// Manta has one window with tabs). AppKit asks the app delegate's
+    /// `applicationDockMenu:`, which winit's delegate doesn't have: the
+    /// method is added to its class.
+    fn dock_menu(mtm: MainThreadMarker, target: &MenuTarget) {
+        let menu = NSMenu::initWithTitle(NSMenu::alloc(mtm), &NSString::from_str(""));
+        let item = unsafe {
+            NSMenuItem::initWithTitle_action_keyEquivalent(
+                NSMenuItem::alloc(mtm),
+                &NSString::from_str(crate::commands::Cmd::NewTab.label()),
+                Some(sel!(mantaDockCommand:)),
+                &NSString::from_str(""),
+            )
+        };
+        unsafe { item.setTarget(Some(target)) };
+        item.setTag(super::cmd_tag(super::Cmd::NewTab) as NSInteger);
+        menu.addItem(&item);
+        DOCK_MENU.with(|d| *d.borrow_mut() = Some((menu, item)));
+
+        unsafe extern "C-unwind" fn application_dock_menu(
+            _this: *mut AnyObject,
+            _cmd: Sel,
+            _app: *mut AnyObject,
+        ) -> *mut NSMenu {
+            DOCK_MENU.with(|d| {
+                d.borrow().as_ref().map_or(std::ptr::null_mut(), |(m, _)| {
+                    Retained::as_ptr(m).cast_mut()
+                })
+            })
+        }
+        let app = NSApplication::sharedApplication(mtm);
+        let delegate: *mut AnyObject = unsafe { msg_send![&*app, delegate] };
+        if delegate.is_null() {
+            return;
+        }
+        // SAFETY: the signature matches "@@:@" (returns the menu, takes the
+        // NSApplication); the menu lives in DOCK_MENU for the app's life.
+        unsafe {
+            let class = objc2::ffi::object_getClass(delegate).cast_mut();
+            let imp: Imp = std::mem::transmute(
+                application_dock_menu
+                    as unsafe extern "C-unwind" fn(
+                        *mut AnyObject,
+                        Sel,
+                        *mut AnyObject,
+                    ) -> *mut NSMenu,
+            );
+            objc2::ffi::class_addMethod(class, sel!(applicationDockMenu:), imp, c"@@:@".as_ptr());
+            // Set again so AppKit looks at what the delegate answers anew
+            // (setting the same delegate does nothing).
+            let none: *mut AnyObject = std::ptr::null_mut();
+            let _: () = msg_send![&*app, setDelegate: none];
+            let _: () = msg_send![&*app, setDelegate: delegate];
+        }
     }
 
     /// Add the Help menu (last in the menu bar, as on macOS) with
@@ -919,6 +996,7 @@ mod native {
                 menu.insertItem_atIndex(&viewer, at + 3);
                 VIEWER_ITEM.with(|s| *s.borrow_mut() = Some(viewer));
                 help_menu(mtm, &target, titles);
+                dock_menu(mtm, &target);
                 TARGET.with(|t| *t.borrow_mut() = Some(target));
                 SETTINGS_ITEM.with(|s| *s.borrow_mut() = Some(item.clone()));
                 UPDATE_ITEM.with(|s| *s.borrow_mut() = Some(update));
@@ -943,6 +1021,11 @@ mod native {
                 h.support.setTitle(&NSString::from_str(titles.support));
                 h.source.setTitle(&NSString::from_str(titles.source));
                 h.licenses.setTitle(&NSString::from_str(titles.licenses));
+            }
+        });
+        DOCK_MENU.with(|d| {
+            if let Some((_, item)) = &*d.borrow() {
+                item.setTitle(&NSString::from_str(crate::commands::Cmd::NewTab.label()));
             }
         });
         if let Some(update) = UPDATE_ITEM.with(|s| s.borrow().clone()) {

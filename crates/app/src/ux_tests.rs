@@ -3561,6 +3561,9 @@ mod devices_ux_tests;
 #[path = "mouse_nav_ux_tests.rs"]
 mod mouse_nav_ux_tests;
 
+#[path = "new_tabs_ux_tests.rs"]
+mod new_tabs_ux_tests;
+
 #[path = "views_ux_tests.rs"]
 mod views_ux_tests;
 

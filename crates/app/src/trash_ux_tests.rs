@@ -297,7 +297,7 @@ fn whats_new_shows_once_after_an_update() {
     assert_eq!(app(&mut h).pane(Side::Left).tabs.len(), tabs);
     press(&mut h, Modifiers::NONE, Key::Enter);
     assert!(app(&mut h).dialog.is_none(), "Got It closes it");
-    let prefs = app(&mut h).prefs;
+    let prefs = app(&mut h).prefs.clone();
     assert_eq!(prefs.whats_new_seen, crate::app::WHATS_NEW);
 
     // Next launch: not again.
@@ -328,7 +328,7 @@ fn whats_new_shows_once_after_an_update() {
     );
     assert!(h.query_by_label("Dragging now copies").is_some());
     press(&mut h, Modifiers::NONE, Key::Enter);
-    let prefs = app(&mut h).prefs;
+    let prefs = app(&mut h).prefs.clone();
     assert_eq!(prefs.whats_new_seen, 2);
     let mut h = notice_harness(&fx, true, prefs, false, Theme::Light);
     assert!(app(&mut h).dialog.is_none(), "only once");

@@ -53,11 +53,11 @@ Ogni pannello può avere più schede. Una scheda mostra una cartella: sul tuo Ma
 
 | Azione | Come |
 |---|---|
-| Nuova scheda | **⌘T** o il pulsante **+** nella barra del percorso |
+| Nuova scheda | **⌘T** o il pulsante **+** nella barra del percorso, oppure **Nuova scheda** nel menu del Dock (clic destro sull’icona di Manta nel Dock) |
 | Chiudere una scheda | **⌘W** o la **×** sulla scheda (compare al passaggio del puntatore) |
 | Cambiare scheda | Fai clic sulla scheda |
 
-La nuova scheda mostra la stessa cartella di quella attuale. **Vai al percorso…** (**⇧⌘G**) apre una cartella direttamente in una nuova scheda (vedi [Navigazione](04-navigation.md#gehe-zum-pfad)).
+La nuova scheda mostra la stessa cartella di quella attuale, oppure la cartella scelta in [**Le nuove schede si aprono in**](16-einstellungen.md#dateien). **Vai al percorso…** (**⇧⌘G**) apre una cartella direttamente in una nuova scheda (vedi [Navigazione](04-navigation.md#gehe-zum-pfad)).
 
 > [!NOTE]
 > Come nel Finder, **⌘T** apre una nuova scheda. Prima di questa versione era **⇧⌘T**, mentre **⌘T** mostrava i trasferimenti: ora questo è **⌥⌘L**.

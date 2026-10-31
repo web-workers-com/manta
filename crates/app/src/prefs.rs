@@ -111,6 +111,62 @@ pub enum MouseNav {
     Off,
 }
 
+/// Where a new tab (⌘T, the Dock menu) opens, and the panes when Manta
+/// starts without a saved session; like Finder's "New Finder windows
+/// show".
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NewTabFolder {
+    /// The folder of the tab it was opened from (the home folder at launch).
+    #[default]
+    Same,
+    Home,
+    Desktop,
+    Documents,
+    Downloads,
+    /// A folder the user chose.
+    Other(PathBuf),
+}
+
+impl NewTabFolder {
+    /// The choices in the menu (besides "Other…").
+    pub const PRESETS: [NewTabFolder; 5] = [
+        NewTabFolder::Same,
+        NewTabFolder::Home,
+        NewTabFolder::Desktop,
+        NewTabFolder::Documents,
+        NewTabFolder::Downloads,
+    ];
+
+    pub fn label(&self) -> String {
+        match self {
+            NewTabFolder::Same => t!("settings.new_tabs.same").into(),
+            NewTabFolder::Home => t!("sidebar.place.home").into(),
+            NewTabFolder::Desktop => t!("sidebar.place.desktop").into(),
+            NewTabFolder::Documents => t!("sidebar.place.documents").into(),
+            NewTabFolder::Downloads => t!("sidebar.place.downloads").into(),
+            NewTabFolder::Other(p) => p
+                .file_name()
+                .map_or_else(|| p.to_string_lossy(), |n| n.to_string_lossy())
+                .into_owned(),
+        }
+    }
+
+    /// The folder to open: `None` for [`NewTabFolder::Same`] and when it
+    /// doesn't exist (any more).
+    pub fn dir(&self) -> Option<PathBuf> {
+        let dir = match self {
+            NewTabFolder::Same => None,
+            NewTabFolder::Home => dirs::home_dir(),
+            NewTabFolder::Desktop => dirs::desktop_dir(),
+            NewTabFolder::Documents => dirs::document_dir(),
+            NewTabFolder::Downloads => dirs::download_dir(),
+            NewTabFolder::Other(p) => Some(p.clone()),
+        }?;
+        dir.is_dir().then_some(dir)
+    }
+}
+
 /// A step through a tab's (or the help's) history.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NavStep {
@@ -147,7 +203,7 @@ impl MouseNav {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Prefs {
     /// New tabs (and the panes at launch) show hidden files.
     #[serde(default)]
@@ -182,6 +238,9 @@ pub struct Prefs {
     /// pointer (and in the help).
     #[serde(default)]
     pub mouse_nav: MouseNav,
+    /// Where new tabs open (and the panes at a start without a session).
+    #[serde(default)]
+    pub new_tabs: NewTabFolder,
     /// Download small images (< 5 MB) from servers in the background for
     /// thumbnails; off: server files show their type icon.
     #[serde(default)]
@@ -235,6 +294,29 @@ impl Prefs {
 mod tests {
     use super::*;
 
+    /// New tabs open in the chosen folder; one that's gone means "the
+    /// same folder" again. A chosen folder is stored with its path.
+    #[test]
+    fn new_tab_folder() {
+        assert_eq!(NewTabFolder::Same.dir(), None);
+        let dir = tempfile::tempdir().unwrap();
+        let other = NewTabFolder::Other(dir.path().to_path_buf());
+        assert_eq!(other.dir().as_deref(), Some(dir.path()));
+        let gone = NewTabFolder::Other(dir.path().join("gone"));
+        assert_eq!(gone.dir(), None);
+        assert_eq!(gone.label(), "gone");
+
+        let path = dir.path().join("settings.json");
+        let p = Prefs {
+            new_tabs: other.clone(),
+            ..Prefs::default()
+        };
+        p.save(&path).unwrap();
+        assert_eq!(Prefs::load(&path).new_tabs, other);
+        std::fs::write(&path, r#"{"new_tabs":"downloads"}"#).unwrap();
+        assert_eq!(Prefs::load(&path).new_tabs, NewTabFolder::Downloads);
+    }
+
     #[test]
     fn round_trip_and_defaults() {
         let dir = tempfile::tempdir().unwrap();
@@ -270,6 +352,7 @@ mod tests {
     #[test]
     fn mouse_side_buttons_go_back_and_forward_by_default() {
         assert_eq!(Prefs::default().mouse_nav, MouseNav::BackForward);
+        assert_eq!(Prefs::default().new_tabs, NewTabFolder::Same);
         let p: Prefs = serde_json::from_str("{\"mouse_nav\": \"swapped\"}").unwrap();
         assert_eq!(p.mouse_nav, MouseNav::Swapped);
         let p: Prefs = serde_json::from_str("{\"mouse_nav\": \"off\"}").unwrap();

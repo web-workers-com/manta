@@ -707,6 +707,10 @@ Short UI terms only (menus, commands, buttons, settings labels, dialog titles, s
 | `settings.mouse_nav.back_forward` | Back / Forward | Zurück / Vorwärts | 后退 / 前进 | Atrás / Adelante | Précédent / Suivant | Indietro / Avanti | Назад / Вперёд |
 | `settings.mouse_nav.swapped` | Forward / Back (swapped) | Vorwärts / Zurück (vertauscht) | 前进 / 后退（互换） | Adelante / Atrás (invertido) | Suivant / Précédent (inversés) | Avanti / Indietro (invertiti) | Вперёд / Назад (поменять) |
 | `settings.mouse_nav.off` | Off | Aus | 关 | Desactivado | Désactivés | Disattivati | Выкл. |
+| `settings.new_tabs` | New tabs open in | Neue Tabs öffnen in | 新标签页打开位置 | Las pestañas nuevas se abren en | Les nouveaux onglets s’ouvrent dans | Le nuove schede si aprono in | Новые вкладки открываются в |
+| `settings.new_tabs.same` | Same folder | Gleicher Ordner | 同一文件夹 | La misma carpeta | Le même dossier | La stessa cartella | Той же папке |
+| `settings.new_tabs.custom` | Other… | Anderer … | 其他… | Otra… | Autre… | Altra… | Другой… |
+| `settings.new_tabs.choose` | Folder for new tabs | Ordner für neue Tabs | 新标签页的文件夹 | Carpeta para las pestañas nuevas | Dossier des nouveaux onglets | Cartella per le nuove schede | Папка для новых вкладок |
 | `settings.section.copy_move` | Copy and move | Kopieren und Bewegen | 拷贝和移动 | Copiar y mover | Copie et déplacement | Copia e spostamento | Копирование и перемещение |
 | `settings.drop` | When you drop files | Beim Ablegen von Dateien | 拖放文件时 | Al soltar archivos | Lorsque vous déposez des fichiers | Quando rilasci dei file | При перетаскивании файлов |
 | `settings.drop.ask` | Ask (Copy preselected) | Nachfragen (Kopieren vorausgewählt) | 询问（预选“拷贝”） | Preguntar (Copiar preseleccionado) | Demander (Copier présélectionné) | Chiedi (Copia preselezionato) | Спрашивать (по умолчанию копировать) |
