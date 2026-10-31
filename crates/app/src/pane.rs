@@ -2840,7 +2840,7 @@ pub(crate) fn empty_states(
             tab.rebuild_view();
         }
     } else {
-        let hidden = tab.entries.len();
+        let hidden = util::listable_count(&tab.entries);
         let read_only = tab.loc.read_only();
         let body = if hidden > 0 && !tab.show_hidden {
             t!(

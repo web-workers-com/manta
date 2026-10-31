@@ -6624,7 +6624,7 @@ impl MantaApp {
         ui.horizontal_centered(|ui| {
             let total = tab.view.len();
             let mut s = t!("status.items", count = total);
-            let hidden = tab.entries.len().saturating_sub(total);
+            let hidden = util::listable_count(&tab.entries).saturating_sub(total);
             if hidden > 0 && tab.filter.is_empty() && !tab.show_hidden {
                 s.push_str(&t!("status.hidden", n = util::format_count(hidden as u64)));
             }
@@ -6712,8 +6712,9 @@ impl MantaApp {
     }
 
     /// Show a notice and return true if the selection of `side` holds an
-    /// app's folder in iCloud Drive: like in Finder, those can't be renamed,
-    /// moved or deleted (`removal`: moving or deleting).
+    /// app's folder in iCloud Drive or one of Apple's apps: like in Finder,
+    /// those can't be renamed, moved or deleted (`removal`: moving or
+    /// deleting).
     fn refuse_app_folders(&mut self, side: Side, removal: bool) -> bool {
         let tab = self.pane(side).tab();
         if tab.loc.conn.is_some() || tab.loc.archive.is_some() {
@@ -6724,6 +6725,25 @@ impl MantaApp {
     }
 
     fn refuse_app_folder_paths(&mut self, paths: &[VfsPath], removal: bool) -> bool {
+        // Apple's apps (Applications lists them, like Finder): macOS
+        // protects them.
+        if let Some(p) = paths
+            .iter()
+            .find(|p| util::sip_protected(std::path::Path::new(p.as_str())))
+        {
+            let name = p.file_name().to_string();
+            let title = if removal {
+                t!("system.cant_remove", name = name)
+            } else {
+                t!("system.cant_rename", name = name)
+            };
+            self.toasts.push(
+                ToastKind::Info,
+                title,
+                Some(t!("system.protected_detail").into()),
+            );
+            return true;
+        }
         let Some(name) = paths
             .iter()
             .map(|p| std::path::Path::new(p.as_str()))

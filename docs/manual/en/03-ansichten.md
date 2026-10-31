@@ -38,7 +38,7 @@ List view has no such button – you sort there with the column headers. In a na
 
 The list shows the columns **Name**, **Size**, **Modified** and **Permissions**.
 
-- **Sort**: click a column header. A second click reverses the order.
+- **Sort**: click a column header. A second click reverses the order. Folders always come first; apps and other packages sort like files, as in Finder.
 - **Column width**: drag a column's left edge.
 - **Folder sizes**: with the [Folder Sizes](14-plugins.md#ordnergroessen) plugin the **Size** column shows real sizes for folders too.
 

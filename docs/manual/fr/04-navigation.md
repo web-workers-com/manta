@@ -109,7 +109,7 @@ Si **Sous-dossiers** ne trouve rien, la sous-fenêtre vide propose **Rechercher 
 
 ## Fichiers masqués {#unsichtbare-dateien}
 
-Les fichiers dont le nom commence par un point (comme `.git`, `.env`) et les fichiers marqués comme masqués sont normalement cachés.
+Les fichiers dont le nom commence par un point (comme `.git`, `.env`) et les fichiers marqués comme masqués sont normalement cachés. Seul `.DS_Store` n’apparaît jamais, même avec les fichiers masqués affichés, comme dans le Finder : macOS le recrée dans presque chaque dossier.
 
 - **⇧⌘.** (**Afficher les fichiers masqués**) les affiche ou les masque dans l’onglet actuel. Le bouton de la barre d’outils représentant un fichier en pointillés fait de même (il est mis en évidence tant que les fichiers masqués sont affichés). L’œil à côté correspond à Coup d’œil.
 - **Réglages** → **Général** → **Afficher les fichiers masqués** détermine si les nouveaux onglets et Manta au lancement les affichent.

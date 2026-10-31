@@ -304,6 +304,8 @@ Gli elementi sui server, nei container e negli archivi mostrano ciò che indica 
 
 Negli archivi, nei container arrestati e nei container senza shell non puoi modificare nulla. Lo indica un indicatore **Sola lettura** (o **Arrestato**) nella barra del percorso. Copiare fuori con **F5** o trascinando funziona sempre.
 
+Come il Finder, **Applicazioni** mostra anche le app di Apple (Calcolatrice, Mail…) e **Utility** quelle di macOS. Si trovano sul volume di sistema protetto: puoi aprirle e copiarle, ma non rinominarle, spostarle né eliminarle.
+
 ## Vedi anche
 
 - [Archivi](10-archive.md): comprimere ed estrarre.

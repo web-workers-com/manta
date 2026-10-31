@@ -109,7 +109,7 @@ If Subfolders finds nothing, the empty pane offers **Search This Mac**.
 
 ## Hidden files {#unsichtbare-dateien}
 
-Files whose name starts with a dot (such as `.git`, `.env`) and files marked as hidden are normally hidden.
+Files whose name starts with a dot (such as `.git`, `.env`) and files marked as hidden are normally hidden. Only `.DS_Store` never shows, not even with hidden files on, like in Finder: macOS recreates it in almost every folder.
 
 - **⇧⌘.** (**Show Hidden Files**) shows or hides them in the current tab. The toolbar button with the dashed file does the same (it is highlighted while hidden files are shown). The eye next to it is Quick Look.
 - **Settings** → **General** → **Show hidden files** decides whether new tabs and Manta at launch show them.

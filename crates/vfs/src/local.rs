@@ -339,6 +339,57 @@ fn refuse_app_library(path: &VfsPath) -> VfsResult<()> {
     Ok(())
 }
 
+/// Finder shows Apple's apps (`/System/Applications`, on the read-only
+/// system volume) inside Applications, and their Utilities inside
+/// Utilities: the folder whose items join `dir`'s listing.
+fn system_apps_of(dir: &Path) -> Option<PathBuf> {
+    if !cfg!(target_os = "macos") {
+        return None;
+    }
+    match dir.to_str()? {
+        "/Applications" => Some(PathBuf::from("/System/Applications")),
+        "/Applications/Utilities" => Some(PathBuf::from("/System/Applications/Utilities")),
+        _ => None,
+    }
+}
+
+/// `dir`'s entries plus the ones in `system` it doesn't have itself (by
+/// name, ignoring case). Links to Apple's apps (`Safari.app` points into
+/// `/System/Cryptexes`) are flagged hidden, but Finder shows them.
+fn list_with_system_apps(
+    dir: &VfsPath,
+    system: &Path,
+    part: &mut dyn FnMut(Vec<Entry>),
+) -> VfsResult<()> {
+    let mut names = std::collections::HashSet::new();
+    list_dir(dir, &mut |mut p| {
+        for e in &mut p {
+            names.insert(e.name.to_lowercase());
+            let to_system = e
+                .link_target
+                .as_deref()
+                .is_some_and(|t| t.starts_with("/System/") || t.starts_with("../System/"));
+            if to_system && !e.name.starts_with('.') {
+                e.hidden = false;
+            }
+        }
+        part(p)
+    })?;
+    let system_dir = VfsPath::new(&system.to_string_lossy());
+    let mut extra = Vec::new();
+    // Not there (other systems, tests): Applications as it is.
+    let _ = list_dir(&system_dir, &mut |p| {
+        extra.extend(
+            p.into_iter()
+                .filter(|e| !e.hidden && !names.contains(&e.name.to_lowercase())),
+        )
+    });
+    if !extra.is_empty() {
+        part(extra);
+    }
+    Ok(())
+}
+
 /// The folder's entries, in parts (macOS: `getattrlistbulk`).
 fn list_dir(dir: &VfsPath, part: &mut dyn FnMut(Vec<Entry>)) -> VfsResult<()> {
     let os = os_path(dir);
@@ -405,10 +456,14 @@ impl Vfs for LocalFs {
         Ok(out)
     }
 
-    /// iCloud Drive's top folder also lists the apps' folders, like
-    /// Finder ([`crate::icloud`]).
+    /// iCloud Drive's top folder also lists the apps' folders, and
+    /// Applications Apple's own apps, like Finder ([`crate::icloud`],
+    /// [`system_apps_of`]).
     fn list_parts(&self, dir: &VfsPath, part: &mut dyn FnMut(Vec<Entry>)) -> VfsResult<()> {
         let os = os_path(dir);
+        if let Some(system) = system_apps_of(&os) {
+            return list_with_system_apps(dir, &system, part);
+        }
         if !is_icloud_top(&os) {
             return list_dir(dir, part);
         }
@@ -701,6 +756,71 @@ mod tests {
         assert_eq!(entries[1].size, 3);
         assert!(entries[2].is_dir());
         assert_eq!(entries[2].path, root.join("sub"));
+    }
+
+    /// Applications also lists Apple's apps, like Finder; its own items
+    /// win, and a link to a system app isn't hidden.
+    #[test]
+    fn applications_include_system_apps() {
+        let (_td, root, l) = setup();
+        let apps = root.join("Applications");
+        let system = root.join("System");
+        for d in [
+            &apps,
+            &system,
+            &apps.join("Pages.app"),
+            &system.join("Mail.app"),
+        ] {
+            l.create_dir(d).expect("mkdir");
+        }
+        l.create_dir(&system.join("pages.app")).expect("mkdir");
+        l.create_dir(&system.join(".hidden.app")).expect("mkdir");
+        std::os::unix::fs::symlink("../System/Mail.app", apps.join("Safari.app").as_str())
+            .expect("symlink");
+        #[cfg(target_os = "macos")]
+        {
+            let c = std::ffi::CString::new(apps.join("Safari.app").as_str()).unwrap();
+            assert_eq!(
+                unsafe { libc::lchflags(c.as_ptr(), 0x8000) },
+                0,
+                "UF_HIDDEN"
+            );
+            assert!(l.stat(&apps.join("Safari.app")).expect("stat").hidden);
+        }
+
+        let mut out = Vec::new();
+        list_with_system_apps(&apps, std::path::Path::new(system.as_str()), &mut |p| {
+            out.extend(p)
+        })
+        .expect("list");
+        let mut names: Vec<(&str, &str, bool)> = out
+            .iter()
+            .map(|e| (e.name.as_str(), e.path.as_str(), e.hidden))
+            .collect();
+        names.sort();
+        let (a, s) = (apps.as_str().to_string(), system.as_str().to_string());
+        assert_eq!(
+            names,
+            [
+                ("Mail.app", format!("{s}/Mail.app").as_str(), false),
+                ("Pages.app", format!("{a}/Pages.app").as_str(), false),
+                ("Safari.app", format!("{a}/Safari.app").as_str(), false),
+            ]
+        );
+        assert_eq!(system_apps_of(std::path::Path::new("/Users")), None);
+
+        // The real one, where there is one (macOS).
+        if std::path::Path::new("/System/Applications/Calculator.app").exists() {
+            let real = l.list(&VfsPath::new("/Applications")).expect("list");
+            let calc = real
+                .iter()
+                .find(|e| e.name == "Calculator.app")
+                .expect("Calculator");
+            assert_eq!(calc.path.as_str(), "/System/Applications/Calculator.app");
+            if let Some(safari) = real.iter().find(|e| e.name == "Safari.app") {
+                assert!(!safari.hidden, "Safari shows like in Finder");
+            }
+        }
     }
 
     #[test]

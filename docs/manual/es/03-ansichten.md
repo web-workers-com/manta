@@ -38,7 +38,7 @@ La visualización Lista no tiene este botón: ahí ordenas con los encabezados d
 
 La lista muestra las columnas **Nombre**, **Tamaño**, **Fecha de modificación** y **Permisos**.
 
-- **Ordenar**: haz clic en el encabezado de una columna. Un segundo clic invierte el orden.
+- **Ordenar**: haz clic en el encabezado de una columna. Un segundo clic invierte el orden. Las carpetas van siempre primero; las apps y otros paquetes se ordenan como archivos, como en el Finder.
 - **Anchura de columna**: arrastra el borde izquierdo de una columna.
 - **Tamaños de carpeta**: con el plugin [Tamaños de carpeta](14-plugins.md#ordnergroessen), la columna **Tamaño** muestra también el tamaño real de las carpetas.
 

@@ -109,7 +109,7 @@ Si Subcarpetas no encuentra nada, el panel vacío ofrece **Buscar en este Mac**.
 
 ## Archivos ocultos {#unsichtbare-dateien}
 
-Los archivos cuyo nombre empieza por un punto (como `.git` o `.env`) y los archivos marcados como ocultos no se muestran normalmente.
+Los archivos cuyo nombre empieza por un punto (como `.git` o `.env`) y los archivos marcados como ocultos no se muestran normalmente. Solo `.DS_Store` no se muestra nunca, ni siquiera con los archivos ocultos visibles, como en el Finder: macOS lo vuelve a crear en casi todas las carpetas.
 
 - **⇧⌘.** (**Mostrar archivos ocultos**) los muestra u oculta en la pestaña actual. El botón de la barra de herramientas con el archivo de contorno discontinuo hace lo mismo (aparece resaltado mientras se muestran los archivos ocultos). El ojo que hay al lado es Vista Rápida.
 - **Ajustes** → **General** → **Mostrar archivos ocultos** determina si las pestañas nuevas y Manta al arrancar los muestran.

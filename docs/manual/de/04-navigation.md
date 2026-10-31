@@ -109,7 +109,7 @@ Findet **Unterordner** nichts, bietet der leere Bereich **Diesen Mac durchsuchen
 
 ## Unsichtbare Dateien {#unsichtbare-dateien}
 
-Dateien, deren Name mit einem Punkt beginnt (z. B. `.git`, `.env`), und als unsichtbar markierte Dateien blendet Manta normalerweise aus.
+Dateien, deren Name mit einem Punkt beginnt (z. B. `.git`, `.env`), und als unsichtbar markierte Dateien blendet Manta normalerweise aus. Nur `.DS_Store` zeigt Manta nie, auch nicht eingeblendet – wie der Finder. macOS legt diese Datei in fast jedem Ordner neu an.
 
 - **⇧⌘.** (**Unsichtbare Dateien einblenden**) blendet sie im aktuellen Tab ein oder aus. Dasselbe tut die Taste mit der gestrichelten Datei in der Symbolleiste (sie ist hervorgehoben, solange unsichtbare Dateien zu sehen sind). Das Auge daneben ist die Schnellansicht.
 - Unter **Einstellungen** → **Allgemein** → **Unsichtbare Dateien einblenden** legst du fest, ob neue Tabs und Manta beim Start sie zeigen.

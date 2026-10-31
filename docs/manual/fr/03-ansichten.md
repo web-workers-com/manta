@@ -38,7 +38,7 @@ La présentation Liste n’a pas ce bouton – vous y triez à l’aide des en-t
 
 La liste affiche les colonnes **Nom**, **Taille**, **Date de modification** et **Autorisations**.
 
-- **Trier** : cliquez sur un en-tête de colonne. Un deuxième clic inverse l’ordre.
+- **Trier** : cliquez sur un en-tête de colonne. Un deuxième clic inverse l’ordre. Les dossiers viennent toujours en premier ; les apps et autres paquets sont triés comme des fichiers, comme dans le Finder.
 - **Largeur des colonnes** : faites glisser le bord gauche d’une colonne.
 - **Taille des dossiers** : avec le plug-in [Tailles des dossiers](14-plugins.md#ordnergroessen), la colonne **Taille** affiche aussi la taille réelle des dossiers.
 

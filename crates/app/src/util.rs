@@ -256,8 +256,27 @@ pub fn cmp_lowercase(name: &str, other_lower: &str) -> Ordering {
     }
 }
 
-/// Directories always first (like Finder), then by the chosen column.
-/// Ties fall back to the name.
+/// Folder extensions that are packages (like Finder): sorted like files,
+/// and a search doesn't look inside them.
+const PACKAGES: &[&str] = &[
+    "app",
+    "bundle",
+    "framework",
+    "photoslibrary",
+    "musiclibrary",
+    "tvlibrary",
+    "xcarchive",
+    "plugin",
+    "appex",
+    "kext",
+];
+
+pub fn is_package(name: &str) -> bool {
+    name.rsplit_once('.').is_some_and(|(stem, ext)| {
+        !stem.is_empty() && PACKAGES.contains(&ext.to_lowercase().as_str())
+    })
+}
+
 /// The size used for sorting: plugin-measured folder sizes where known.
 pub fn sort_size(e: &Entry, dir_sizes: &HashMap<String, SizeInfo>) -> u64 {
     if e.is_dir() {
@@ -267,15 +286,46 @@ pub fn sort_size(e: &Entry, dir_sizes: &HashMap<String, SizeInfo>) -> u64 {
     }
 }
 
-/// Folders use their plugin-measured size (by name) when sorting by size.
+/// Protected by macOS (System Integrity Protection, the `restricted`
+/// flag): Apple's apps and the link to Safari can't be renamed, moved or
+/// deleted, not even by an administrator.
+pub fn sip_protected(path: &std::path::Path) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        use std::os::macos::fs::MetadataExt;
+        const SF_RESTRICTED: u32 = 0x0008_0000;
+        std::fs::symlink_metadata(path).is_ok_and(|m| m.st_flags() & SF_RESTRICTED != 0)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = path;
+        false
+    }
+}
+
+/// Files Finder never shows, not even with hidden files on: macOS
+/// recreates `.DS_Store` in every folder Finder opens.
+pub fn never_listed(name: &str) -> bool {
+    display_name(name) == ".DS_Store"
+}
+
+/// How many of `entries` a pane can show (with hidden files on).
+pub fn listable_count(entries: &[Entry]) -> usize {
+    entries.iter().filter(|e| !never_listed(&e.name)).count()
+}
+
+/// Directories (not packages) always first, like Finder, then by the
+/// chosen column. Ties fall back to the name. Folders use their
+/// plugin-measured size (by name) when sorting by size.
 pub fn compare_entries(
     a: &Entry,
     b: &Entry,
     sort: SortSpec,
     dir_sizes: &HashMap<String, SizeInfo>,
 ) -> Ordering {
-    let dir_a = a.is_dir();
-    let dir_b = b.is_dir();
+    // Packages (`Safari.app`) sort like files, as in Finder.
+    let dir_a = a.is_dir() && !is_package(&a.name);
+    let dir_b = b.is_dir() && !is_package(&b.name);
     if dir_a != dir_b {
         return if dir_a {
             Ordering::Less
@@ -334,6 +384,7 @@ pub fn visible_indices_tagged(
     let mut idx: Vec<usize> = entries
         .iter()
         .enumerate()
+        .filter(|(_, e)| !never_listed(&e.name))
         .filter(|(_, e)| show_hidden || !(e.hidden || display_name(&e.name).starts_with('.')))
         .filter(|(_, e)| contains_lowercase(display_name(&e.name), &needle))
         .filter(|(_, e)| {
@@ -687,6 +738,17 @@ mod tests {
         assert_eq!(cmp_lowercase("Ä", "ä"), Ordering::Equal);
     }
 
+    /// Apple's apps are protected by macOS; ordinary files aren't.
+    #[test]
+    fn sip_protected_items() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(!sip_protected(dir.path()));
+        let calc = std::path::Path::new("/System/Applications/Calculator.app");
+        if calc.exists() {
+            assert!(sip_protected(calc));
+        }
+    }
+
     #[test]
     fn sorting_dirs_first() {
         let entries = vec![
@@ -714,6 +776,29 @@ mod tests {
 
         let v = visible_indices(&entries, SortSpec::default(), false, "TXT", &HashMap::new());
         assert_eq!(names(v), ["a.txt", "b.txt"]);
+
+        // .DS_Store never shows, like in Finder, not even with hidden files.
+        let ds = vec![
+            entry(".DS_Store", EntryKind::File, 6148),
+            entry(".env", EntryKind::File, 1),
+        ];
+        let v = visible_indices(&ds, SortSpec::default(), true, "", &HashMap::new());
+        assert_eq!(v, [1]);
+        assert_eq!(listable_count(&ds), 1);
+
+        // Packages sort among the files, like Finder ("Utilities" on top).
+        let apps = vec![
+            entry("Calculator.app", EntryKind::Directory, 0),
+            entry("Utilities", EntryKind::Directory, 0),
+            entry("Books.app", EntryKind::Directory, 0),
+            entry("notes.txt", EntryKind::File, 1),
+        ];
+        let v = visible_indices(&apps, SortSpec::default(), false, "", &HashMap::new());
+        let order: Vec<&str> = v.iter().map(|&i| apps[i].name.as_str()).collect();
+        assert_eq!(
+            order,
+            ["Utilities", "Books.app", "Calculator.app", "notes.txt"]
+        );
 
         // Plugin-measured folder sizes take part in size sorting.
         let sizes = HashMap::from([(

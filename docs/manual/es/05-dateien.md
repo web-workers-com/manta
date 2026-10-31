@@ -304,6 +304,8 @@ Los ítems de servidores, contenedores y archivos comprimidos muestran lo que in
 
 En los archivos comprimidos, en los contenedores detenidos y en los contenedores sin shell no puedes cambiar nada. Una etiqueta **Solo lectura** (o **Detenido**) en la barra de ruta lo indica. Copiar hacia fuera con **F5** o arrastrando funciona siempre.
 
+Como el Finder, **Aplicaciones** muestra también las apps de Apple (Calculadora, Mail…) y **Utilidades** las de macOS. Están en el volumen del sistema protegido: puedes abrirlas y copiarlas, pero no renombrarlas, moverlas ni eliminarlas.
+
 ## Consulta también
 
 - [Archivos comprimidos](10-archive.md): comprimir y extraer.

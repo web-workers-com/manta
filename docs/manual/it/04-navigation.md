@@ -110,7 +110,7 @@ Se Sottocartelle non trova nulla, il pannello vuoto propone **Cerca su questo Ma
 
 ## File nascosti {#unsichtbare-dateien}
 
-I file il cui nome inizia con un punto (come `.git`, `.env`) e i file contrassegnati come nascosti di solito non sono visibili.
+I file il cui nome inizia con un punto (come `.git`, `.env`) e i file contrassegnati come nascosti di solito non sono visibili. Solo `.DS_Store` non viene mai mostrato, nemmeno con i file nascosti visibili, come nel Finder: macOS lo ricrea in quasi ogni cartella.
 
 - **⇧⌘.** (**Mostra file nascosti**) li mostra o li nasconde nella scheda attuale. Il pulsante della barra degli strumenti con il file tratteggiato fa lo stesso (è evidenziato mentre i file nascosti sono visibili). L’occhio accanto è Visualizzazione rapida.
 - **Impostazioni** → **Generali** → **Mostra file nascosti** decide se le nuove schede e Manta all’avvio li mostrano.

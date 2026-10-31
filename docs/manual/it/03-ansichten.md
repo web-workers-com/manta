@@ -38,7 +38,7 @@ La vista Elenco non ha questo pulsante: lì ordini con le intestazioni delle col
 
 L’elenco mostra le colonne **Nome**, **Dimensione**, **Data di modifica** e **Permessi**.
 
-- **Ordinare**: fai clic sull’intestazione di una colonna. Un secondo clic inverte l’ordine.
+- **Ordinare**: fai clic sull’intestazione di una colonna. Un secondo clic inverte l’ordine. Le cartelle vengono sempre prima; le app e gli altri pacchetti sono ordinati come file, come nel Finder.
 - **Larghezza delle colonne**: trascina il bordo sinistro di una colonna.
 - **Dimensioni delle cartelle**: con il plug-in [Dimensioni cartelle](14-plugins.md#ordnergroessen) la colonna **Dimensione** mostra le dimensioni reali anche per le cartelle.
 

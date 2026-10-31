@@ -304,6 +304,8 @@ Pour les éléments situés sur des serveurs, dans des conteneurs et dans des ar
 
 Dans les archives, les conteneurs arrêtés et les conteneurs sans shell, vous ne pouvez rien modifier. Une pastille **Lecture seule** (ou **Arrêté**) dans la barre du chemin d’accès l’indique. La copie vers l’extérieur avec **F5** ou par glisser-déposer fonctionne toujours.
 
+Comme le Finder, **Applications** affiche aussi les apps d’Apple (Calculette, Mail…) et **Utilitaires** celles de macOS. Elles se trouvent sur le volume système protégé : vous pouvez les ouvrir et les copier, mais pas les renommer, les déplacer ni les supprimer.
+
 ## Voir aussi
 
 - [Archives](10-archive.md) : compresser et extraire.

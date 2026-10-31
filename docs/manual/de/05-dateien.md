@@ -304,6 +304,8 @@ Objekte auf Servern, in Containern und in Archiven zeigen, was der Server meldet
 
 In Archiven, gestoppten Containern und Containern ohne Shell kannst du nichts ändern. Ein Chip **Schreibgeschützt** (bzw. **Gestoppt**) in der Pfadleiste zeigt das an. Kopieren mit **F5** oder per Drag & Drop heraus geht immer.
 
+Im Ordner **Programme** zeigt Manta wie der Finder auch die Apps von Apple (Rechner, Mail …) und in **Dienstprogramme** die von macOS. Sie liegen auf dem geschützten Systemvolume: Öffnen und Kopieren geht, Umbenennen, Verschieben und Löschen nicht.
+
 ## Siehe auch
 
 - [Archive](10-archive.md): Komprimieren und Entpacken.

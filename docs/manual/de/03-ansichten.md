@@ -38,7 +38,7 @@ In der Listenansicht gibt es die Taste nicht – dort sortierst du über die Spa
 
 Die Liste zeigt die Spalten **Name**, **Größe**, **Änderungsdatum** und **Zugriffsrechte**.
 
-- **Sortieren**: Klicke auf eine Spaltenüberschrift. Ein zweiter Klick kehrt die Reihenfolge um.
+- **Sortieren**: Klicke auf eine Spaltenüberschrift. Ein zweiter Klick kehrt die Reihenfolge um. Ordner stehen immer oben; Apps und andere Pakete sortiert Manta wie Dateien, wie der Finder.
 - **Spaltenbreite**: Zieh am linken Rand einer Spalte.
 - **Ordnergrößen**: Mit dem Plugin [Ordnergrößen](14-plugins.md#ordnergroessen) zeigt die Spalte **Größe** auch für Ordner die echte Größe.
 

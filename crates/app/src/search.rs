@@ -94,27 +94,6 @@ pub const DEBOUNCE: Duration = Duration::from_millis(250);
 /// Results are handed over in batches of this size (or per folder).
 const BATCH: usize = 64;
 
-/// Folder extensions that are packages: their contents aren't searched
-/// (like Finder), the package itself is.
-const PACKAGES: &[&str] = &[
-    "app",
-    "bundle",
-    "framework",
-    "photoslibrary",
-    "musiclibrary",
-    "tvlibrary",
-    "xcarchive",
-    "plugin",
-    "appex",
-    "kext",
-];
-
-fn is_package(name: &str) -> bool {
-    name.rsplit_once('.').is_some_and(|(stem, ext)| {
-        !stem.is_empty() && PACKAGES.contains(&ext.to_lowercase().as_str())
-    })
-}
-
 // ------------------------------------------------------------------ matching
 
 /// Name matching: substring, or a `*` / `?` pattern over the whole name.
@@ -685,7 +664,7 @@ fn read_dir_matches(
         }
         let path = e.path();
         let is_dir = e.file_type().is_ok_and(|t| t.is_dir());
-        if is_dir && !is_package(&name) {
+        if is_dir && !crate::util::is_package(&name) {
             subdirs.push(path.clone());
         }
         if !terms.name.matches(&name) {

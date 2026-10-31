@@ -304,6 +304,8 @@ Items on servers, in containers and in archives show what the server reports (si
 
 In archives, stopped containers and containers without a shell you can't change anything. A **Read-only** (or **Stopped**) chip in the path bar shows this. Copying out with **F5** or by dragging always works.
 
+Like Finder, **Applications** also lists Apple's apps (Calculator, Mail …), and **Utilities** those of macOS. They live on the protected system volume: you can open and copy them, but not rename, move or delete them.
+
 ## See also
 
 - [Archives](10-archive.md): compress and extract.
