@@ -17,7 +17,7 @@ env:
 jobs:
   check:
     name: fmt, clippy, tests
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -40,7 +40,7 @@ jobs:
       # skipped (MANTA_RENDER_DIR is not set), so no GPU is needed.
       # Tests wait for events, not for times; the shared runners are slow, so
       # give background work more headroom before a wait gives up. One test
-      # thread per vCPU (3 on macos-14) is libtest's default and stays.
+      # thread per vCPU (3 on macos-15) is libtest's default and stays.
       - name: Tests
         env:
           MANTA_TEST_WAIT_SECS: "120"
