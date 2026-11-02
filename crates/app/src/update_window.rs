@@ -545,8 +545,10 @@ fn compact_page(ui: &mut egui::Ui, u: &mut Updates) {
             }
             View::Failed(_) => {
                 ui.horizontal(|ui| {
-                    // Centre the two buttons.
-                    let w = 2.0 * 112.0 + space::MD;
+                    // Centre the two buttons, measured as they are drawn.
+                    let w = widgets::button_width(ui, t!("update.close"), ButtonKind::Secondary)
+                        + widgets::button_width(ui, t!("update.retry"), ButtonKind::Primary)
+                        + space::MD;
                     ui.add_space(((ui.available_width() - w) / 2.0).max(0.0));
                     ui.spacing_mut().item_spacing.x = space::MD;
                     if widgets::button(ui, t!("update.close"), ButtonKind::Secondary, true)

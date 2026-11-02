@@ -279,6 +279,47 @@ fn render_update_window_states() {
     render_state("checking", View::Checking, false, None);
 }
 
+/// Issue #10: Close and Try Again sit centred under the message.
+#[test]
+fn failed_check_buttons_are_centred() {
+    for (locale, _) in LOCALES {
+        let (mut u, _) = fake_updates(UpdateState::default());
+        u.show_state(
+            View::Failed(Failure {
+                during: Op::Check,
+                kind: FailKind::Offline,
+                detail: UpdateError::Network("offline".into()).to_string(),
+            }),
+            None,
+        );
+        i18n::set_locale(locale);
+        let size = crate::update_window::SIZE;
+        let mut h = Harness::builder()
+            .with_size(egui::vec2(size[0], size[1]))
+            .with_accessibility_check(false)
+            .with_context_setup(crate::theme::install)
+            .build_ui_state(
+                |ui, u: &mut Updates| {
+                    egui::CentralPanel::default()
+                        .show(ui, |ui| crate::update_window::contents(ui, u));
+                },
+                u,
+            );
+        h.run_steps(2);
+        let left = h.get_by_label(t!("update.close")).rect();
+        let right = h.get_by_label(t!("update.retry")).rect();
+        let centre = (left.min.x + right.max.x) / 2.0;
+        assert!(
+            (centre - size[0] / 2.0).abs() < 2.0,
+            "{locale:?}: buttons span {}..{} in a {} wide window",
+            left.min.x,
+            right.max.x,
+            size[0]
+        );
+        i18n::set_locale(Locale::En);
+    }
+}
+
 #[test]
 fn render_update_settings() {
     require_gpu!();
