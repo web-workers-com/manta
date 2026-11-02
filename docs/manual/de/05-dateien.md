@@ -238,6 +238,8 @@ So legst du Objekte in den Papierkorb:
 
 Eine Meldung bestätigt es („3 Objekte in den Papierkorb gelegt“). Um die Objekte zurückzuholen, drücke **⌘Z** (**Widerrufen**): Manta legt sie dorthin zurück, wo sie waren, siehe [Widerrufen](#widerrufen). Ältere Objekte oder solche, die du in einer anderen App gelöscht hast, holst du im Finder zurück: Öffne dort den Papierkorb, wähle sie aus und wähle **Zurücklegen**.
 
+Wo macOS Manta das Ablegen verweigert, obwohl der Finder es darf (etwa in iCloud Drive), legt Manta das Objekt über den Finder in den Papierkorb. macOS fragt beim ersten Mal, ob Manta den Finder steuern darf.
+
 So löschst du endgültig:
 
 1. Wähle die Objekte aus.

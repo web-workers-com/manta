@@ -238,6 +238,8 @@ Pour placer des éléments dans la corbeille :
 
 Un message le confirme (« 3 éléments placés dans la corbeille »). Pour récupérer les éléments, appuyez sur **⌘Z** (**Annuler**) : Manta les remet à leur place, voir [Annuler](#widerrufen). Pour des éléments plus anciens ou supprimés dans une autre app, ouvrez la corbeille dans le Finder, sélectionnez-les et choisissez **Remettre**.
 
+Là où macOS refuse à Manta ce que le Finder peut faire (par exemple dans iCloud Drive), Manta place l’élément dans la corbeille via le Finder. macOS demande une fois si Manta peut contrôler le Finder.
+
 Pour supprimer définitivement :
 
 1. Sélectionnez les éléments.

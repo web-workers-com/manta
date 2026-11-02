@@ -50,12 +50,19 @@ impl Trasher for SystemTrash {
             use objc2_foundation::{NSFileManager, NSString, NSURL};
             let url = NSURL::fileURLWithPath(&NSString::from_str(&path.to_string_lossy()));
             let mut out = None;
-            NSFileManager::defaultManager()
+            match NSFileManager::defaultManager()
                 .trashItemAtURL_resultingItemURL_error(&url, Some(&mut out))
-                .map_err(|e| e.localizedDescription().to_string())?;
-            Ok(out
-                .and_then(|u| u.path())
-                .map(|s| PathBuf::from(s.to_string())))
+            {
+                Ok(()) => Ok(out
+                    .and_then(|u| u.path())
+                    .map(|s| PathBuf::from(s.to_string()))),
+                // macOS refuses some places to Manta although Finder may
+                // trash there (iCloud Drive, issue #11): ask Finder then.
+                Err(e) if refused(&e.domain().to_string(), e.code()) => {
+                    trash_with_finder(path).map_err(|_| e.localizedDescription().to_string())
+                }
+                Err(e) => Err(e.localizedDescription().to_string()),
+            }
         }
         #[cfg(not(target_os = "macos"))]
         {
@@ -255,6 +262,46 @@ pub fn is_permission_error(err: &str) -> bool {
     e.contains("permission denied")
         || e.contains("operation not permitted")
         || e.contains("os error 1)")
+}
+
+/// An `NSError` from `trashItemAtURL:` that means "not allowed" (no
+/// permission to read or write, `EPERM`, `EACCES`), not a missing item.
+pub fn refused(domain: &str, code: isize) -> bool {
+    match domain {
+        // NSFileReadNoPermissionError, NSFileWriteNoPermissionError
+        "NSCocoaErrorDomain" => code == 257 || code == 513,
+        "NSPOSIXErrorDomain" => code == 1 || code == 13,
+        _ => false,
+    }
+}
+
+/// Move `path` to the Trash through Finder (Apple Events, as for emptying).
+/// The path goes in as an argument, never into the script text. Finder
+/// answers with the item's place in the Trash, which Undo needs.
+#[cfg(target_os = "macos")]
+fn trash_with_finder(path: &Path) -> Result<Option<PathBuf>, String> {
+    let out = std::process::Command::new("/usr/bin/osascript")
+        .args([
+            "-e",
+            "on run argv",
+            "-e",
+            "set f to (POSIX file (item 1 of argv)) as alias",
+            "-e",
+            "tell application \"Finder\" to set t to delete f",
+            "-e",
+            "return POSIX path of (t as alias)",
+            "-e",
+            "end run",
+        ])
+        .arg(path)
+        .output()
+        .map_err(|e| e.to_string())?;
+    if !out.status.success() {
+        return Err(String::from_utf8_lossy(&out.stderr).trim().to_string());
+    }
+    let loc = String::from_utf8_lossy(&out.stdout);
+    let loc = loc.trim().trim_end_matches('/');
+    Ok((!loc.is_empty()).then(|| PathBuf::from(loc)))
 }
 
 /// `path` is the Trash folder `trash` or inside it.
@@ -460,6 +507,20 @@ mod tests {
             "No such file or directory (os error 2)"
         ));
         assert!(!is_permission_error("os error 13)"));
+    }
+
+    /// Issue #11: which trashing errors hand the item to Finder.
+    #[test]
+    fn refused_trashing_goes_to_finder() {
+        assert!(refused("NSCocoaErrorDomain", 513));
+        assert!(refused("NSCocoaErrorDomain", 257));
+        assert!(refused("NSPOSIXErrorDomain", 1));
+        assert!(refused("NSPOSIXErrorDomain", 13));
+        // A missing item or a full disk stays an error.
+        assert!(!refused("NSCocoaErrorDomain", 4));
+        assert!(!refused("NSCocoaErrorDomain", 640));
+        assert!(!refused("NSPOSIXErrorDomain", 2));
+        assert!(!refused("NSOSStatusErrorDomain", 513));
     }
 
     #[test]

@@ -238,6 +238,8 @@ Per spostare elementi nel Cestino:
 
 Un messaggio lo conferma (“3 elementi spostati nel Cestino”). Per recuperare gli elementi, premi **⌘Z** (**Annulla**): Manta li rimette dov’erano, vedi [Annulla](#widerrufen). Per elementi più vecchi o eliminati da un’altra app, apri il Cestino nel Finder, selezionali e scegli **Ripristina**.
 
+Dove macOS non lo consente a Manta ma lo consente al Finder (ad esempio in iCloud Drive), Manta sposta l’elemento nel Cestino tramite il Finder. macOS chiede una volta se Manta può controllare il Finder.
+
 Per eliminare definitivamente:
 
 1. Seleziona gli elementi.

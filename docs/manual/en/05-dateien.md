@@ -238,6 +238,8 @@ To move items to the Trash:
 
 A message confirms it ("Moved 3 items to the Trash"). To get the items back, press **⌘Z** (**Undo**): Manta puts them back where they were, see [Undo](#widerrufen). For older items, or ones deleted in another app, open the Trash in Finder, select them and choose **Put Back**.
 
+Where macOS refuses Manta although Finder may move the item (in iCloud Drive, for example), Manta moves it to the Trash through Finder. macOS asks once whether Manta may control Finder.
+
 To delete permanently:
 
 1. Select the items.

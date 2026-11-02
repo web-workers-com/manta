@@ -238,6 +238,8 @@ Para trasladar ítems a la papelera:
 
 Un mensaje lo confirma (“Se han trasladado 3 ítems a la papelera”). Para recuperar los ítems, pulsa **⌘Z** (**Deshacer**): Manta los devuelve a donde estaban; consulta [Deshacer](#widerrufen). Para ítems más antiguos o eliminados desde otra app, abre la papelera en Finder, selecciónalos y elige **Devolver**.
 
+Donde macOS no se lo permite a Manta aunque Finder sí puede (por ejemplo, en iCloud Drive), Manta traslada el ítem a la papelera a través de Finder. macOS pregunta una vez si Manta puede controlar Finder.
+
 Para eliminar definitivamente:
 
 1. Selecciona los ítems.
