@@ -149,7 +149,7 @@ Autres conseils pour FTP :
 | « Aucune clé utilisable dans ssh-agent » | `ssh-add ~/.ssh/id_ed25519` |
 | « L’horloge de votre Mac est déréglée » | **Réglages Système** → **Général** → **Date et heure** → réglage automatique. |
 | « Le bucket se trouve dans une autre région » | Dans la zone de dialogue, réglez la région sur celle indiquée. |
-| « La connexion au serveur a été perdue » | Vérifiez votre réseau, puis cliquez sur **Réessayer**. |
+| « La connexion au serveur a été perdue » | Vérifiez votre réseau, puis cliquez sur **Réessayer**. Manta se reconnecte de lui-même au serveur. |
 
 ## Un transfert n’avance pas {#uebertragungen}
 

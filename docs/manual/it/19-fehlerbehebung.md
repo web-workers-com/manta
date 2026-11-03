@@ -149,7 +149,7 @@ Altri suggerimenti per FTP:
 | “Nessuna chiave utilizzabile in ssh-agent” | `ssh-add ~/.ssh/id_ed25519` |
 | “L’orologio del Mac non è corretto” | **Impostazioni di Sistema** → **Generali** → **Data e ora** → impostazione automatica. |
 | “Il bucket si trova in un’altra regione” | Nella finestra imposta la regione indicata. |
-| “La connessione al server è stata persa” | Controlla la rete, poi **Riprova**. |
+| “La connessione al server è stata persa” | Controlla la rete, poi **Riprova**. Manta accede di nuovo al server da solo. |
 
 ## Un trasferimento non va avanti {#uebertragungen}
 

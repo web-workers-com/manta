@@ -149,7 +149,7 @@ Más indicaciones sobre FTP:
 | “No hay ninguna clave utilizable en ssh-agent” | `ssh-add ~/.ssh/id_ed25519` |
 | “El reloj de tu Mac no está en hora” | **Ajustes del Sistema** → **General** → **Fecha y hora** → ajustar automáticamente. |
 | “El bucket está en otra región” | Ajusta la región del diálogo a la indicada. |
-| “Se ha perdido la conexión con el servidor” | Comprueba la red y después haz clic en **Reintentar**. |
+| “Se ha perdido la conexión con el servidor” | Comprueba la red y después haz clic en **Reintentar**. Manta vuelve a iniciar sesión en el servidor por sí solo. |
 
 ## Una transferencia no avanza {#uebertragungen}
 

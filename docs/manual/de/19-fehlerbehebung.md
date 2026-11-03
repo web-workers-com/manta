@@ -149,7 +149,7 @@ Weitere FTP-Hinweise:
 | „Kein verwendbarer Schlüssel im ssh-agent“ | `ssh-add ~/.ssh/id_ed25519` |
 | „Die Uhr deines Mac geht falsch“ | **Systemeinstellungen** → **Allgemein** → **Datum & Uhrzeit** → automatisch einstellen. |
 | „Der Bucket liegt in einer anderen Region“ | Region im Dialog auf die genannte ändern. |
-| „Die Verbindung zum Server wurde unterbrochen“ | Netzwerk prüfen, dann **Erneut versuchen**. |
+| „Die Verbindung zum Server wurde unterbrochen“ | Netzwerk prüfen, dann **Erneut versuchen**. Manta meldet sich dabei selbst neu am Server an. |
 
 ## Eine Übertragung kommt nicht weiter {#uebertragungen}
 

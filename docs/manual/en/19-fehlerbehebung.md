@@ -149,7 +149,7 @@ More FTP hints:
 | "No usable key in ssh-agent" | `ssh-add ~/.ssh/id_ed25519` |
 | "Your Mac's clock is off" | **System Settings** → **General** → **Date & Time** → set automatically. |
 | "The bucket is in another region" | Set the region in the dialog to the one named. |
-| "The connection to the server was lost" | Check your network, then **Try Again**. |
+| "The connection to the server was lost" | Check your network, then **Try Again**. Manta logs in to the server again by itself. |
 
 ## A transfer doesn't move on {#uebertragungen}
 
