@@ -45,6 +45,13 @@ Le terminal s’exécute là où se trouve la sous-fenêtre :
 
 Clic droit → **Ouvrir un shell dans le conteneur** démarre un shell dans le dossier du conteneur que vous consultez.
 
+### `ssh` dans le terminal local {#ssh-erkennen}
+
+Si vous tapez vous-même `ssh` dans le terminal local (p. ex. `ssh anna@serveur` ou un hôte de votre `~/.ssh/config`), Manta le remarque. Tant que la connexion est active, **Ouvrir anna@serveur dans la sous-fenêtre** apparaît en haut à droite du terminal. Un clic affiche le serveur en SFTP dans la sous-fenêtre : Manta réutilise une connexion ouverte vers lui, sinon un favori correspondant, sinon la fenêtre de connexion s’ouvre déjà remplie (vous n’entrez que le mot de passe). Ensuite, la sous-fenêtre et le terminal se suivent comme pour un conteneur, et vous pouvez copier et déplacer entre les sous-fenêtres.
+
+- Le terminal démarre alors son propre shell sur le serveur ; avec une connexion par mot de passe, il le redemande là-bas. La session `ssh` que vous avez tapée reste en arrière-plan jusqu’à ce que vous reveniez au dossier local.
+- `ssh` est reconnu dans zsh (le shell par défaut de macOS), y compris via un alias. `ssh` suivi d’une commande (`ssh serveur uptime`) ou seulement pour un tunnel (`-N`) ne propose rien.
+
 ## Actions sur fichier dans le terminal {#dateiaktionen}
 
 Lorsque vous copiez, déplacez, supprimez ou renommez quelque chose dans Manta, le terminal affiche la commande shell correspondante – comme `cp -R …`, `scp …`, `docker cp …` ou `aws s3 cp …` – suivie du résultat (« terminé », « échec : … »). Le placement dans la corbeille apparaît sous la forme `mv … ~/.Trash/`, une suppression définitive sous la forme `rm -r …`.

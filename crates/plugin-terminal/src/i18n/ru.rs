@@ -20,6 +20,7 @@ pub const ENTRIES: Translations = &[
     ("term.remote.retry_hint", "Нажмите, чтобы повторить попытку."),
     ("term.error.start", "Не удалось запустить оболочку: {error}"),
     ("term.toast.settings_not_saved", "Настройки Терминала не сохранены: {error}"),
+    ("term.ssh.open", "Открыть {target} в панели"),
     ("term.pill.run", "Выполнит «{command}», когда оболочка освободится"),
     ("term.pill.cd", "Перейдет в «{name}», когда оболочка освободится"),
     ("term.pill.cd_and_show", "Перейдет в «{name}» и покажет {actions}, когда оболочка освободится"),

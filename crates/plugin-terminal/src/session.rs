@@ -104,6 +104,9 @@ pub struct Shared {
     cwd_reports: Vec<Dir>,
     /// The shell drew a prompt and has not started a command since.
     pub at_prompt: bool,
+    /// The command line the shim reported (OSC 7702, lines mentioning
+    /// `ssh`) while it runs; cleared at the next prompt.
+    pub running: Option<String>,
     /// `None` until the shell announced (or failed to announce) integration.
     pub integration: Option<Integration>,
     /// The shell announced the key that prints the spool file.
@@ -160,6 +163,7 @@ impl Shared {
                     self.finalize_rprompt();
                     self.prompt_start_abs = Some(self.cursor_abs_line());
                     self.at_prompt = true;
+                    self.running = None;
                     self.echo = echo;
                     self.prompt_count = self.prompt_count.wrapping_add(1);
                     self.integration = Some(if push {
@@ -172,7 +176,14 @@ impl Shared {
                     self.finalize_rprompt();
                     self.prompt_start_abs = None;
                     self.at_prompt = false;
+                    self.running = None;
                 }
+                // Only right after the shim's 133;C (a program can't fake
+                // one mid-run without also faking the prompt).
+                OscEvent::Command(line) if !self.at_prompt && self.running.is_none() => {
+                    self.running = Some(line);
+                }
+                OscEvent::Command(_) => {}
                 OscEvent::RpromptStart => self.rprompt_start = Some(self.cursor_point()),
                 OscEvent::RpromptEnd => self.record_rprompt(),
             }
@@ -367,6 +378,7 @@ fn new_shared(size: GridSize, scrollback: usize, listener: Listener) -> Shared {
         osc: OscScanner::new(),
         cwd_reports: Vec::new(),
         at_prompt: false,
+        running: None,
         integration: None,
         echo: false,
         prompt_count: 0,
@@ -891,6 +903,12 @@ impl Session {
 
     pub fn integration(&self) -> Option<Integration> {
         self.lock().integration
+    }
+
+    /// The command line the shell reported for the command running now
+    /// (only lines mentioning `ssh`, local zsh), `None` at the prompt.
+    pub fn running_command(&self) -> Option<String> {
+        self.lock().running.clone()
     }
 
     /// A program other than the shell is in the foreground.

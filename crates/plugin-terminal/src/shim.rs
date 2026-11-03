@@ -97,6 +97,11 @@ const ZSH_HOOKS: &str = r#"if [[ -o interactive && -z ${_manta_hooked-} ]]; then
   }
   _manta_preexec() {
     builtin printf '\e]133;C\a'
+    # A command line mentioning ssh (aliases expanded): the terminal may
+    # offer to open that server in the pane. Control characters are dropped
+    # so the sequence can't be cut short.
+    [[ $2 == *ssh* ]] && builtin printf '\e]7702;%s\a' "${2//[[:cntrl:]]/ }"
+    builtin return 0
   }
   builtin autoload -Uz add-zsh-hook
   add-zsh-hook precmd _manta_precmd

@@ -475,11 +475,248 @@ fn run_with_timeout(
     }
 }
 
+/// The server of an `ssh` typed in a local terminal, as `ssh -G` resolves
+/// it (aliases and `~/.ssh/config` applied).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SshDest {
+    pub user: String,
+    pub host: String,
+    pub port: u16,
+}
+
+impl SshDest {
+    /// `user@host`, with the port when it isn't 22.
+    pub fn label(&self) -> String {
+        let mut s = if self.user.is_empty() {
+            self.host.clone()
+        } else {
+            format!("{}@{}", self.user, self.host)
+        };
+        if self.port != 22 {
+            s.push_str(&format!(":{}", self.port));
+        }
+        s
+    }
+}
+
+/// `ssh` options that take an argument (OpenSSH's `ssh(1)`).
+const SSH_ARG_OPTS: &str = "BbcDEeFIiJLlmOoPpQRSWw";
+/// Options that mean "no interactive shell": `-N` (no command), `-f`
+/// (background), `-W` (stdio forward), `-O` (control), `-G` / `-V` / `-Q`
+/// (print and exit).
+const SSH_NO_SHELL: &str = "NfWOGVQ";
+
+/// The `ssh` arguments up to the destination when `cmd` opens an
+/// interactive shell on a server (`ssh [options] destination`, no remote
+/// command), for `ssh -G`. `None` for anything else.
+pub fn ssh_shell_args(cmd: &str) -> Option<Vec<String>> {
+    let words = shell_words(cmd)?;
+    let mut it = words.into_iter().peekable();
+    // `command ssh`, `exec ssh`, `\ssh`, `/usr/bin/ssh`.
+    while it.peek().is_some_and(|w| w == "command" || w == "exec") {
+        it.next();
+    }
+    let prog = it.next()?;
+    if prog.trim_start_matches('\\').rsplit('/').next() != Some("ssh") {
+        return None;
+    }
+    let mut args = Vec::new();
+    while let Some(w) = it.next() {
+        if w == "--" {
+            let dest = it.next()?;
+            args.push(w);
+            args.push(dest);
+            break;
+        }
+        if let Some(flags) = w.strip_prefix('-').filter(|f| !f.is_empty()) {
+            for (i, c) in flags.char_indices() {
+                if SSH_NO_SHELL.contains(c) {
+                    return None;
+                }
+                if SSH_ARG_OPTS.contains(c) {
+                    args.push(w.clone());
+                    // `-p2222` or `-p 2222`.
+                    if i + c.len_utf8() == flags.len() {
+                        args.push(it.next()?);
+                    }
+                    break;
+                }
+                if i + c.len_utf8() == flags.len() {
+                    args.push(w.clone());
+                }
+            }
+            continue;
+        }
+        args.push(w);
+        break;
+    }
+    // A remote command after the destination: not an interactive shell.
+    if it.next().is_some() || args.last().is_none_or(|d| d.starts_with('-')) {
+        return None;
+    }
+    Some(args)
+}
+
+/// Split a command line into words like a POSIX shell (quotes and
+/// backslashes; no expansion). `None` for anything with shell syntax we
+/// don't follow (pipes, `;`, `&&`, `$(…)`, redirections).
+fn shell_words(cmd: &str) -> Option<Vec<String>> {
+    let mut words = Vec::new();
+    let mut cur = String::new();
+    let mut in_word = false;
+    let mut chars = cmd.trim().chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '\'' => {
+                in_word = true;
+                loop {
+                    match chars.next()? {
+                        '\'' => break,
+                        c => cur.push(c),
+                    }
+                }
+            }
+            '"' => {
+                in_word = true;
+                loop {
+                    match chars.next()? {
+                        '"' => break,
+                        '\\' => cur.push(chars.next()?),
+                        '$' | '`' => return None,
+                        c => cur.push(c),
+                    }
+                }
+            }
+            '\\' => {
+                in_word = true;
+                cur.push(chars.next()?);
+            }
+            c if c.is_whitespace() => {
+                if in_word {
+                    words.push(std::mem::take(&mut cur));
+                    in_word = false;
+                }
+            }
+            '|' | ';' | '&' | '<' | '>' | '$' | '`' | '(' | ')' => return None,
+            c => {
+                in_word = true;
+                cur.push(c);
+            }
+        }
+    }
+    if in_word {
+        words.push(cur);
+    }
+    Some(words)
+}
+
+/// `user`, `hostname` and `port` from `ssh -G` output.
+pub fn parse_ssh_config(out: &str) -> Option<SshDest> {
+    let (mut user, mut host, mut port) = (None, None, 22);
+    for line in out.lines() {
+        let Some((k, v)) = line.trim().split_once(' ') else {
+            continue;
+        };
+        match k {
+            "user" => user = Some(v.trim().to_string()),
+            "hostname" => host = Some(v.trim().to_string()),
+            "port" => port = v.trim().parse().unwrap_or(22),
+            _ => {}
+        }
+    }
+    Some(SshDest {
+        user: user.unwrap_or_default(),
+        host: host.filter(|h| !h.is_empty())?,
+        port,
+    })
+}
+
+/// Resolve `ssh` arguments from [`ssh_shell_args`] with `ssh -G`
+/// (blocking; run on a background thread). Reads only the local config.
+pub fn resolve_ssh(args: &[String], timeout: Duration) -> Option<SshDest> {
+    let exe = find_program("ssh")?;
+    let mut all: Vec<&str> = vec!["-G"];
+    all.extend(args.iter().map(String::as_str));
+    match run_with_timeout(&exe, &all, timeout) {
+        Ok((true, out)) => parse_ssh_config(&out),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use manta_core::VfsPath;
     use manta_plugin::PaneId;
+
+    #[test]
+    fn ssh_commands_that_open_a_shell() {
+        let args = |c: &str| ssh_shell_args(c).map(|v| v.join(" "));
+        assert_eq!(
+            args("ssh anna@files.example.org").as_deref(),
+            Some("anna@files.example.org")
+        );
+        assert_eq!(args("ssh -p 2222 web").as_deref(), Some("-p 2222 web"));
+        assert_eq!(
+            args("ssh -p2222 -l anna web").as_deref(),
+            Some("-p2222 -l anna web")
+        );
+        assert_eq!(args("ssh -A -t prod").as_deref(), Some("-A -t prod"));
+        assert_eq!(
+            args("ssh -Ai ~/.ssh/k prod").as_deref(),
+            Some("-Ai ~/.ssh/k prod")
+        );
+        assert_eq!(args("command ssh prod").as_deref(), Some("prod"));
+        assert_eq!(args("/usr/bin/ssh 'my host'").as_deref(), Some("my host"));
+        assert_eq!(args("ssh -- prod").as_deref(), Some("-- prod"));
+        assert_eq!(
+            args("ssh ssh://anna@web:2222").as_deref(),
+            Some("ssh://anna@web:2222")
+        );
+        // A remote command, no shell, other programs, shell syntax.
+        assert_eq!(args("ssh prod uptime"), None);
+        assert_eq!(args("ssh -N -L 8080:localhost:80 prod"), None);
+        assert_eq!(args("ssh -G prod"), None);
+        assert_eq!(args("ssh"), None);
+        assert_eq!(args("ssh -p"), None);
+        assert_eq!(args("sshfs prod:/ /mnt"), None);
+        assert_eq!(args("ssh-add -l"), None);
+        assert_eq!(args("ssh prod | tee log"), None);
+        assert_eq!(args("ssh $HOST"), None);
+        assert_eq!(args("echo ssh prod"), None);
+    }
+
+    #[test]
+    fn ssh_config_output() {
+        let out =
+            "user anna\nhostname files.example.org\nport 2222\nidentityfile ~/.ssh/id_ed25519\n";
+        let d = parse_ssh_config(out).unwrap();
+        assert_eq!(
+            d,
+            SshDest {
+                user: "anna".into(),
+                host: "files.example.org".into(),
+                port: 2222
+            }
+        );
+        assert_eq!(d.label(), "anna@files.example.org:2222");
+        let d = parse_ssh_config("hostname web\n").unwrap();
+        assert_eq!((d.port, d.label()), (22, "web".to_string()));
+        assert_eq!(parse_ssh_config("user anna\n"), None);
+    }
+
+    /// The real `ssh -G` resolves without contacting the server.
+    #[test]
+    fn resolve_with_ssh_g() {
+        if find_program("ssh").is_none() {
+            return;
+        }
+        let args = ssh_shell_args("ssh -p 2222 -l anna 203.0.113.9").unwrap();
+        let d = resolve_ssh(&args, Duration::from_secs(5)).expect("ssh -G");
+        assert_eq!(d.user, "anna");
+        assert_eq!(d.host, "203.0.113.9");
+        assert_eq!(d.port, 2222);
+    }
 
     fn pane(local: Option<&str>, remote: Option<RemoteEndpoint>) -> PaneState {
         PaneState {

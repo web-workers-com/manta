@@ -18,6 +18,8 @@ use manta_plugin_terminal::shim::Integration;
 struct Ctr {
     name: String,
     docker: PathBuf,
+    /// The host port of an sshd container (0 otherwise).
+    port: u16,
 }
 
 impl Ctr {
@@ -62,7 +64,11 @@ impl Ctr {
             );
             return None;
         }
-        Some(Ctr { name, docker })
+        Some(Ctr {
+            name,
+            docker,
+            port: 0,
+        })
     }
 }
 
@@ -288,6 +294,170 @@ fn ssh_command_string_through_a_login_shell() {
     }));
     assert_eq!(nav, Some(PathBuf::from("/")));
     s.shutdown(Duration::from_millis(500));
+}
+
+/// A real `ssh` login with a password typed into the terminal, against a
+/// throwaway sshd container: pane and terminal follow each other.
+#[test]
+fn ssh_with_password_follows_the_pane() {
+    let Some(ctr) = Ctr::start_sshd() else {
+        eprintln!("skipping: no docker / sshd image");
+        return;
+    };
+    let target = Target::Ssh {
+        user: "manta".into(),
+        host: "127.0.0.1".into(),
+        port: ctr.port,
+    };
+    let ssh = find_program("ssh").expect("ssh");
+    // The throwaway server's host key is new on every run.
+    let mut args = vec![
+        "-o".to_string(),
+        "StrictHostKeyChecking=no".into(),
+        "-o".into(),
+        "UserKnownHostsFile=/dev/null".into(),
+        "-o".into(),
+        "PubkeyAuthentication=no".into(),
+    ];
+    args.extend(target.args("/"));
+    let mut s = Session::spawn(SpawnOptions {
+        shell: PathBuf::from("/bin/sh"),
+        cwd: PathBuf::from("/"),
+        size: GridSize {
+            cols: 100,
+            rows: 30,
+        },
+        cell_px: (8, 16),
+        scrollback: 1000,
+        shim_root: std::env::temp_dir().join("manta-remote-test-shims"),
+        theme: Theme::dark(),
+        waker: Arc::new(|| {}),
+        spool: None,
+        zdotdir: None,
+        remote: Some(RemoteSpawn {
+            program: ssh,
+            args,
+            osc_host: target.osc_host(),
+            start_dir: "/".into(),
+        }),
+    })
+    .expect("spawn");
+    assert!(
+        wait(&mut s, Duration::from_secs(30), |s, _| s
+            .lock()
+            .screen_text()
+            .to_lowercase()
+            .contains("password:")),
+        "no password prompt:\n{}",
+        s.lock().screen_text()
+    );
+    // Typed slowly, like a person (past the integration grace period).
+    std::thread::sleep(Duration::from_secs(5));
+    s.write(b"manta-pw\r");
+    s.user_submitted();
+    assert!(
+        wait(&mut s, Duration::from_secs(20), |s, _| s.is_idle()
+            && cwd(s).as_deref() == Some("/")),
+        "no prompt after login (integration {:?}):\n{}",
+        s.integration(),
+        s.lock().screen_text()
+    );
+
+    // Pane → terminal.
+    s.pane_changed(Some(Path::new("/etc")));
+    assert!(
+        wait(&mut s, Duration::from_secs(5), |s, _| cwd(s).as_deref()
+            == Some("/etc")),
+        "no OSC 7 for /etc:\n{}",
+        s.lock().screen_text()
+    );
+    assert!(wait(&mut s, Duration::from_secs(5), |s, _| s.is_idle()));
+
+    // Terminal → pane.
+    s.write(b"cd /tmp\r");
+    s.user_submitted();
+    let mut nav = None;
+    assert!(
+        wait(&mut s, Duration::from_secs(5), |_, n| {
+            nav = nav.take().or(n);
+            nav.is_some()
+        }),
+        "pane not told about cd /tmp:\n{}",
+        s.lock().screen_text()
+    );
+    assert_eq!(nav, Some(PathBuf::from("/tmp")));
+    s.shutdown(Duration::from_millis(800));
+}
+
+impl Ctr {
+    /// An sshd on a free local port, user `manta`, password `manta-pw`.
+    fn start_sshd() -> Option<Ctr> {
+        if !containers_opted_in() {
+            return None;
+        }
+        let docker = find_program("docker")?;
+        let name = format!("manta-test-sshd-{}", std::process::id());
+        let script = "apk add --no-cache openssh bash >/dev/null && ssh-keygen -A >/dev/null \
+            && adduser -D -s /bin/bash manta && echo manta:manta-pw | chpasswd \
+            && exec /usr/sbin/sshd -D -e -o PasswordAuthentication=yes";
+        let out = Command::new(&docker)
+            .args([
+                "run",
+                "-d",
+                "--rm",
+                "--label",
+                "manta-test",
+                "--name",
+                &name,
+                "-p",
+                "127.0.0.1::22",
+                "alpine:3",
+                "sh",
+                "-c",
+                script,
+            ])
+            .output()
+            .ok()?;
+        if !out.status.success() {
+            eprintln!("skipping: {}", String::from_utf8_lossy(&out.stderr));
+            return None;
+        }
+        let mut ctr = Ctr {
+            name,
+            docker,
+            port: 0,
+        };
+        let t = Instant::now();
+        while t.elapsed() < Duration::from_secs(90) {
+            if ctr.port == 0 {
+                let o = Command::new(&ctr.docker)
+                    .args(["port", &ctr.name, "22"])
+                    .output()
+                    .ok()?;
+                let p = String::from_utf8_lossy(&o.stdout);
+                if let Some(port) = p.lines().next().and_then(|l| l.rsplit(':').next()) {
+                    ctr.port = port.trim().parse().unwrap_or(0);
+                }
+            }
+            if ctr.port != 0 && sshd_answers(ctr.port) {
+                return Some(ctr);
+            }
+            std::thread::sleep(Duration::from_millis(500));
+        }
+        eprintln!("skipping: sshd did not come up");
+        None
+    }
+}
+
+/// The server greets with `SSH-` (Docker accepts connections before that).
+fn sshd_answers(port: u16) -> bool {
+    use std::io::Read;
+    let Ok(mut c) = std::net::TcpStream::connect(("127.0.0.1", port)) else {
+        return false;
+    };
+    let _ = c.set_read_timeout(Some(Duration::from_secs(1)));
+    let mut b = [0u8; 4];
+    c.read_exact(&mut b).is_ok() && &b == b"SSH-"
 }
 
 /// Real `docker` / `kubectl` only with `MANTA_TEST_CONTAINERS=1`.

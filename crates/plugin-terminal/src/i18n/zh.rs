@@ -20,6 +20,7 @@ pub const ENTRIES: Translations = &[
     ("term.remote.retry_hint", "点按以重试。"),
     ("term.error.start", "无法启动 Shell：{error}"),
     ("term.toast.settings_not_saved", "终端设置未存储：{error}"),
+    ("term.ssh.open", "在面板中打开 {target}"),
     ("term.pill.run", "Shell 空闲时将运行“{command}”"),
     ("term.pill.cd", "Shell 空闲时将 cd 到“{name}”"),
     ("term.pill.cd_and_show", "Shell 空闲时将 cd 到“{name}”并显示 {actions}"),

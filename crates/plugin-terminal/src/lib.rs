@@ -50,7 +50,7 @@ use manta_plugin::{
 use crate::actions::{Outcome, ShellCtx};
 use crate::i18n::tr;
 use crate::palette::Theme;
-use crate::remote::{Probe, Target};
+use crate::remote::{Probe, SshDest, Target};
 use crate::session::{GridSize, RemoteSpawn, Session, SpawnOptions};
 use crate::settings::Settings;
 use crate::view::{InputContext, PaintOptions, ViewState};
@@ -60,6 +60,8 @@ pub const PANEL_ID: &str = "terminal";
 pub const MAX_SESSIONS: usize = 4;
 /// How long checking a container may take.
 const PROBE_TIMEOUT: Duration = Duration::from_secs(6);
+/// How long `ssh -G` may take (it only reads the local config).
+const SSH_RESOLVE_TIMEOUT: Duration = Duration::from_secs(5);
 /// Font family of the bold terminal face we register (SF Mono, wght 700).
 pub const BOLD_FAMILY: &str = "manta-terminal-bold";
 const SF_MONO: &str = "/System/Library/Fonts/SFNSMono.ttf";
@@ -113,6 +115,61 @@ struct PaneTerm {
     parked: Vec<(String, Session)>,
     /// Checking a container before opening a shell in it.
     probe: Option<ProbeJob>,
+    /// An `ssh` running in this (local) shell and the server it went to.
+    ssh: Option<SshOffer>,
+}
+
+/// An interactive `ssh` typed in a local terminal: resolved in the
+/// background with `ssh -G`, then offered as a button that opens the server
+/// in the pane over SFTP.
+struct SshOffer {
+    /// The command line the shell reported.
+    command: String,
+    rx: Option<std::sync::mpsc::Receiver<Option<SshDest>>>,
+    /// The server, once resolved (`None`: not an ssh shell, or unresolved).
+    dest: Option<SshDest>,
+    /// The button was clicked: don't offer it again for this command.
+    used: bool,
+}
+
+/// Keep `offer` in step with the command running in the shell; returns
+/// the server to offer, if any.
+fn ssh_offer(
+    offer: &mut Option<SshOffer>,
+    running: Option<String>,
+    handle: Option<&PluginHandle>,
+) -> Option<SshDest> {
+    let Some(command) = running else {
+        *offer = None;
+        return None;
+    };
+    if offer.as_ref().is_none_or(|o| o.command != command) {
+        let rx = remote::ssh_shell_args(&command).map(|args| {
+            let (tx, rx) = std::sync::mpsc::channel();
+            let handle = handle.cloned();
+            std::thread::spawn(move || {
+                let _ = tx.send(remote::resolve_ssh(&args, SSH_RESOLVE_TIMEOUT));
+                if let Some(h) = handle {
+                    h.request_repaint();
+                }
+            });
+            rx
+        });
+        *offer = Some(SshOffer {
+            command,
+            rx,
+            dest: None,
+            used: false,
+        });
+    }
+    let o = offer.as_mut()?;
+    if let Some(rx) = &o.rx {
+        if let Ok(d) = rx.try_recv() {
+            o.dest = d;
+            o.rx = None;
+        }
+    }
+    o.dest.clone().filter(|_| !o.used)
 }
 
 /// A background [`remote::probe`] of one target.
@@ -677,6 +734,11 @@ impl TerminalPlugin {
                 }
             }
         }
+        // An `ssh` typed in the local shell: offer its server in the pane.
+        let running = (target == Target::Local)
+            .then(|| session.running_command())
+            .flatten();
+        let ssh_dest = ssh_offer(&mut pt.ssh, running, Some(&handle));
         for a in session.take_fallback() {
             // Without integration the shell's cwd is a guess: the pane's.
             let cwd = session
@@ -844,6 +906,21 @@ impl TerminalPlugin {
             };
             pill(&painter, rect, &text, &theme);
         }
+        if let Some(d) = &ssh_dest {
+            let below_pill = run_waiting.is_some() || pending_hint || echo_waiting > 0;
+            let text = tr!("term.ssh.open", target = d.label());
+            if ssh_button(ui, rect, id.with("ssh"), &text, &theme, below_pill).clicked() {
+                handle.send(HostRequest::OpenSftp {
+                    pane: pane.pane,
+                    user: d.user.clone(),
+                    host: d.host.clone(),
+                    port: d.port,
+                });
+                if let Some(o) = pt.ssh.as_mut() {
+                    o.used = true;
+                }
+            }
+        }
         if let Some(n) = &pt.notice {
             let now = Instant::now();
             if now >= n.until {
@@ -951,6 +1028,40 @@ fn pill(painter: &egui::Painter, rect: Rect, text: &str, theme: &Theme) {
         egui::StrokeKind::Inside,
     );
     painter.galley(r.min + pad, galley, color);
+}
+
+/// The "Open user@host in the pane" button in the top-right corner (below
+/// the status pill when one shows).
+fn ssh_button(
+    ui: &mut egui::Ui,
+    rect: Rect,
+    id: egui::Id,
+    text: &str,
+    theme: &Theme,
+    below_pill: bool,
+) -> egui::Response {
+    let font = FontId::proportional(11.5);
+    let galley = ui
+        .painter()
+        .layout_no_wrap(format!("{text}  ↗"), font, theme.bg);
+    let pad = Vec2::new(10.0, 4.0);
+    let size = galley.size() + pad * 2.0;
+    let top = if below_pill { 34.0 } else { 6.0 };
+    let r = Rect::from_min_size(rect.right_top() + Vec2::new(-size.x - 8.0, top), size);
+    let resp = ui
+        .interact(r, id, Sense::click())
+        .on_hover_cursor(egui::CursorIcon::PointingHand);
+    let accent = theme.ansi[4];
+    let fill = if resp.hovered() {
+        palette::mix(accent, theme.fg, 0.15)
+    } else {
+        accent
+    };
+    let painter = ui.painter();
+    painter.rect_filled(r, CornerRadius::same(99), fill);
+    painter.galley(r.min + pad, galley, theme.bg);
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, text));
+    resp
 }
 
 /// The latest file action as a small card in the top-right corner (shells

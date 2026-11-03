@@ -40,6 +40,7 @@ const ENTRIES: Entries = &[
     ("term.remote.retry_hint", "Click to try again.", "Zum erneuten Versuchen klicken."),
     ("term.error.start", "Could not start the shell: {error}", "Die Shell konnte nicht gestartet werden: {error}"),
     ("term.toast.settings_not_saved", "Terminal settings not saved: {error}", "Die Terminal-Einstellungen wurden nicht gesichert: {error}"),
+    ("term.ssh.open", "Open {target} in the pane", "{target} im Bereich öffnen"),
     ("term.pill.run", "Will run “{command}” when idle", "Führt „{command}“ aus, sobald die Shell bereit ist"),
     ("term.pill.cd", "Will cd to “{name}” when idle", "Wechselt nach „{name}“, sobald die Shell bereit ist"),
     ("term.pill.cd_and_show", "Will cd to “{name}” and show {actions} when idle", "Wechselt nach „{name}“ und zeigt {actions}, sobald die Shell bereit ist"),

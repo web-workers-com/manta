@@ -301,3 +301,86 @@ fn containers_opted_in() -> bool {
     }
     ok
 }
+
+/// An `ssh` typed in the local shell: while it runs, a button offers its
+/// server; a click asks the host to open it in the pane (no server needed:
+/// the proxy command just waits).
+#[test]
+fn ssh_in_local_shell_offers_the_server() {
+    use egui_kittest::kittest::Queryable;
+    if !Path::new(SF_PRO).exists()
+        || !Path::new(SF_MONO).exists()
+        || !Path::new("/bin/zsh").exists()
+        || find_program("ssh").is_none()
+    {
+        return;
+    }
+    let tmp = tempfile::tempdir().unwrap();
+    let a = std::fs::canonicalize(tmp.path()).unwrap();
+    let data = a.join("data");
+    std::fs::create_dir_all(&data).unwrap();
+    // An empty ZDOTDIR: not the developer's own zsh startup files (prompts
+    // like oh-my-zsh's update question would eat the typed command).
+    let zd = a.join("zdotdir");
+    std::fs::create_dir_all(&zd).unwrap();
+    std::env::set_var("ZDOTDIR", &zd);
+    let (tx, rx) = std::sync::mpsc::channel::<(String, HostRequest)>();
+    let st: Shared = Rc::new(RefCell::new((TerminalPlugin::new(), local(&a))));
+    let s2 = st.clone();
+    let mut tx = Some(tx);
+    let mut h = Harness::builder()
+        .with_size(egui::vec2(800.0, 300.0))
+        .with_context_setup(install_fonts)
+        .build_ui(move |ui| {
+            let mut g = s2.borrow_mut();
+            let (plugin, pane) = &mut *g;
+            if let Some(tx) = tx.take() {
+                plugin.enable(PluginHandle::new(
+                    "manta.terminal".into(),
+                    tx,
+                    ui.ctx().clone(),
+                    data.clone(),
+                ));
+                plugin.settings_mut().shell = "/bin/zsh".into();
+            }
+            let pane = pane.clone();
+            plugin.panel_ui("terminal", &pane, ui);
+        });
+    let left = PaneId::Left;
+    assert!(pump(&mut h, &st, Duration::from_secs(20), |p| p
+        .debug_is_idle(left)));
+    let label = "Open anna@203.0.113.9:2222 in the pane";
+    assert!(h.query_by_label(label).is_none());
+
+    st.borrow().0.debug_write(
+        left,
+        b"ssh -o ProxyCommand='sleep 60' -p 2222 anna@203.0.113.9\r",
+    );
+    let t = Instant::now();
+    while h.query_by_label(label).is_none() && t.elapsed() < Duration::from_secs(20) {
+        h.step();
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert!(
+        h.query_by_label(label).is_some(),
+        "no button:\n{:?}",
+        st.borrow().0.debug_screen(left)
+    );
+    h.get_by_label(label).click();
+    h.run_steps(2);
+    let sent: Vec<HostRequest> = rx.try_iter().map(|(_, r)| r).collect();
+    assert!(
+        sent.iter().any(|r| matches!(r,
+            HostRequest::OpenSftp { pane, user, host, port }
+                if *pane == left && user == "anna" && host == "203.0.113.9" && *port == 2222)),
+        "{sent:?}"
+    );
+    // Offered once per ssh.
+    h.run_steps(2);
+    assert!(h.query_by_label(label).is_none());
+
+    // ssh ends: back at the prompt, nothing offered.
+    st.borrow().0.debug_write(left, b"\x03");
+    assert!(pump(&mut h, &st, Duration::from_secs(20), |p| p
+        .debug_is_idle(left)));
+}

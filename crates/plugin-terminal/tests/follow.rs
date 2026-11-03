@@ -229,3 +229,62 @@ fn zsh_defers_cd_while_program_runs() {
     s.shutdown(Duration::from_millis(500));
     assert!(s.has_exited());
 }
+
+/// The zsh shim reports a command line mentioning `ssh` while it runs
+/// (aliases expanded), and nothing for other commands.
+#[test]
+fn zsh_reports_ssh_command_lines() {
+    if !Path::new("/bin/zsh").exists() {
+        return;
+    }
+    let a = tempfile::tempdir().unwrap();
+    let data = tempfile::tempdir().unwrap();
+    let zd = tempfile::tempdir().unwrap();
+    std::fs::write(
+        zd.path().join(".zshrc"),
+        "alias prod='read -r _ssh_alias'\n",
+    )
+    .unwrap();
+    let mut s = Session::spawn(SpawnOptions {
+        shell: PathBuf::from("/bin/zsh"),
+        cwd: a.path().to_path_buf(),
+        size: GridSize {
+            cols: 100,
+            rows: 30,
+        },
+        cell_px: (8, 16),
+        scrollback: 1000,
+        shim_root: data.path().to_path_buf(),
+        theme: Theme::dark(),
+        waker: Arc::new(|| {}),
+        spool: None,
+        zdotdir: Some(zd.path().to_path_buf()),
+        remote: None,
+    })
+    .unwrap();
+    assert!(wait_until(&mut s, WAIT, |s| s.is_idle()));
+
+    // Not about ssh: nothing reported.
+    s.write(b"read -r _plain\r");
+    s.user_submitted();
+    assert!(wait_until(&mut s, WAIT, |s| s.is_busy()));
+    std::thread::sleep(Duration::from_millis(200));
+    assert_eq!(s.running_command(), None);
+    s.write(b"x\r");
+    assert!(wait_until(&mut s, WAIT, |s| s.is_idle()));
+
+    // An alias that expands to a line mentioning ssh.
+    s.write(b"prod\r");
+    s.user_submitted();
+    assert!(
+        wait_until(&mut s, WAIT, |s| s.running_command().is_some()),
+        "{}",
+        s.lock().screen_text()
+    );
+    assert_eq!(s.running_command().as_deref(), Some("read -r _ssh_alias"));
+    // Gone at the next prompt.
+    s.write(b"x\r");
+    assert!(wait_until(&mut s, WAIT, |s| s.is_idle()));
+    assert_eq!(s.running_command(), None);
+    s.shutdown(Duration::from_millis(500));
+}

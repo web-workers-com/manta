@@ -2860,37 +2860,7 @@ impl MantaApp {
                         self.handle_action(ctx, Action::OpenLocal(PathBuf::from(path)))
                     }
                     Favorite::Connection { config, keychain } => {
-                        let side = self.active;
-                        // Reuse an existing connection to the same server.
-                        let existing = self.connections.iter().find(|c| {
-                            c.config.host == config.host
-                                && c.config.port == config.port
-                                && c.config.username == config.username
-                                && c.config.protocol == config.protocol
-                        });
-                        if let Some(c) = existing {
-                            let loc = Location {
-                                fs: c.fs.clone(),
-                                conn: Some(c.id),
-                                path: config
-                                    .initial_path
-                                    .as_deref()
-                                    .map(VfsPath::new)
-                                    .unwrap_or_else(VfsPath::root),
-                                archive: None,
-                            };
-                            let home = config.initial_path.is_none();
-                            self.navigate(side, loc, home);
-                        } else if keychain {
-                            self.start_connect(config, None, side, true);
-                        } else if favorites::needs_secret(&config) {
-                            let mut form =
-                                self.connect_form(ConnectForm::from_config(&config, side, Some(i)));
-                            form.error = Some(t!("error.enter_password").into());
-                            self.dialog = Some(Dialog::Connect(form));
-                        } else {
-                            self.start_connect(config, None, side, false);
-                        }
+                        self.open_connection_favorite(self.active, i, config, keychain);
                     }
                 }
             }
@@ -4251,6 +4221,91 @@ impl MantaApp {
     }
 
     /// Say in the connect dialog which pane the server opens in.
+    /// Open the connection favorite `i` (`config`) in `side`: reuse an open
+    /// connection to the same server, else connect (asking for a secret the
+    /// favorite doesn't keep).
+    fn open_connection_favorite(
+        &mut self,
+        side: Side,
+        i: usize,
+        config: ConnectionConfig,
+        keychain: bool,
+    ) {
+        // Reuse an existing connection to the same server.
+        let existing = self.connections.iter().find(|c| {
+            c.config.host == config.host
+                && c.config.port == config.port
+                && c.config.username == config.username
+                && c.config.protocol == config.protocol
+        });
+        if let Some(c) = existing {
+            let loc = Location {
+                fs: c.fs.clone(),
+                conn: Some(c.id),
+                path: config
+                    .initial_path
+                    .as_deref()
+                    .map(VfsPath::new)
+                    .unwrap_or_else(VfsPath::root),
+                archive: None,
+            };
+            let home = config.initial_path.is_none();
+            self.navigate(side, loc, home);
+        } else if keychain {
+            self.start_connect(config, None, side, true);
+        } else if favorites::needs_secret(&config) {
+            let mut form = self.connect_form(ConnectForm::from_config(&config, side, Some(i)));
+            form.error = Some(t!("error.enter_password").into());
+            self.dialog = Some(Dialog::Connect(form));
+        } else {
+            self.start_connect(config, None, side, false);
+        }
+    }
+
+    /// Show the SFTP server `user@host:port` in `side` (the Terminal saw an
+    /// `ssh` to it): an open connection, else a favorite for it, else the
+    /// Connect dialog filled in.
+    fn open_sftp(&mut self, side: Side, user: String, host: String, port: u16) {
+        self.activate(side);
+        let same = |c: &ConnectionConfig| {
+            c.protocol == manta_core::Protocol::Sftp
+                && c.host.eq_ignore_ascii_case(&host)
+                && c.port == port
+                && c.username == user
+        };
+        if let Some(c) = self.connections.iter().find(|c| same(&c.config)) {
+            let loc = Location {
+                fs: c.fs.clone(),
+                conn: Some(c.id),
+                path: VfsPath::root(),
+                archive: None,
+            };
+            self.navigate(side, loc, true);
+            return;
+        }
+        let fav = self
+            .favorites
+            .items
+            .iter()
+            .enumerate()
+            .find_map(|(i, f)| match f {
+                Favorite::Connection { config, keychain } if same(config) => {
+                    Some((i, config.clone(), *keychain))
+                }
+                _ => None,
+            });
+        if let Some((i, config, keychain)) = fav {
+            self.open_connection_favorite(side, i, config, keychain);
+            return;
+        }
+        let mut form = ConnectForm::new(side);
+        form.protocol = manta_core::Protocol::Sftp;
+        form.host = host;
+        form.port = port.to_string();
+        form.user = user;
+        self.dialog = Some(Dialog::Connect(self.connect_form(form)));
+    }
+
     fn connect_form(&self, mut f: ConnectForm) -> ConnectForm {
         f.pane_note = match self.panes.len() {
             1 => Some(t!("connect.subtitle.single").into()),
@@ -4962,6 +5017,7 @@ impl MantaApp {
                 | HostEvent::ListDir { pane, .. }
                 | HostEvent::ReadFile { pane, .. }
                 | HostEvent::Navigate { pane, .. }
+                | HostEvent::OpenSftp { pane, .. }
                 | HostEvent::Select { pane, .. }
                 | HostEvent::Refresh { pane: Some(pane) } => {
                     (!self.has_pane(*pane)).then_some(*pane)
@@ -5019,6 +5075,12 @@ impl MantaApp {
                 HostEvent::Navigate { pane, path } => {
                     self.navigate_path(pane, path);
                 }
+                HostEvent::OpenSftp {
+                    pane,
+                    user,
+                    host,
+                    port,
+                } => self.open_sftp(pane, user, host, port),
                 HostEvent::Select { pane, dir, names } => {
                     let side = pane;
                     self.activate(side);

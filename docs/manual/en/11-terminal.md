@@ -45,6 +45,13 @@ The terminal runs where the pane is:
 
 Right-click → **Open Shell in Container** starts a shell in the container folder you're looking at.
 
+### `ssh` in the local terminal {#ssh-erkennen}
+
+If you type `ssh` yourself in the local terminal (e.g. `ssh anna@server` or a host from your `~/.ssh/config`), Manta notices. While the connection runs, **Open anna@server in the pane** appears in the terminal's top-right corner. Click it to show the server in the pane over SFTP: Manta reuses an open connection to it, else a matching favorite, else the Connect dialog opens filled in (you only enter the password). From then on pane and terminal follow each other as with a container, and you can copy and move between the panes.
+
+- The terminal then starts its own shell on the server; with password login it asks for the password there once more. The `ssh` session you typed stays in the background until you go back to the local folder.
+- `ssh` is noticed in zsh (the macOS default shell), also through an alias. `ssh` with a command after it (`ssh server uptime`) or just for a tunnel (`-N`) offers nothing.
+
 ## File actions in the terminal {#dateiaktionen}
 
 When you copy, move, delete or rename something in Manta, the terminal shows the matching shell command – such as `cp -R …`, `scp …`, `docker cp …` or `aws s3 cp …` – followed by the result ("done", "failed: …"). Moving to the Trash shows up as `mv … ~/.Trash/`, a permanent delete as `rm -r …`.

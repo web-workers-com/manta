@@ -45,6 +45,13 @@ Das Terminal läuft dort, wo der Bereich ist:
 
 Mit Rechtsklick → **Shell im Container öffnen** startest du gezielt eine Shell im angezeigten Container-Ordner.
 
+### `ssh` im lokalen Terminal {#ssh-erkennen}
+
+Tippst du im lokalen Terminal selbst `ssh` (z. B. `ssh anna@server` oder einen Host aus deiner `~/.ssh/config`), erkennt Manta das. Solange die Verbindung läuft, erscheint oben rechts im Terminal **anna@server im Bereich öffnen**. Ein Klick zeigt den Server per SFTP im Bereich: Eine offene Verbindung zu ihm nutzt Manta wieder, sonst einen passenden Favoriten, sonst öffnet sich der Verbindungsdialog fertig ausgefüllt (du gibst nur noch das Passwort ein). Danach folgen Bereich und Terminal einander wie bei einem Container, und du kannst zwischen den Bereichen kopieren und bewegen.
+
+- Das Terminal startet dann eine eigene Shell auf dem Server; bei Anmeldung mit Passwort fragt sie es dort noch einmal. Deine getippte `ssh`-Sitzung bleibt im Hintergrund erhalten, bis du zum lokalen Ordner zurückgehst.
+- Erkannt wird `ssh` in der zsh (der Standard-Shell von macOS), auch über einen Alias. `ssh` mit einem Befehl dahinter (`ssh server uptime`) oder nur für einen Tunnel (`-N`) bietet nichts an.
+
 ## Dateiaktionen im Terminal {#dateiaktionen}
 
 Kopierst, bewegst, löschst oder benennst du in Manta etwas um, zeigt das Terminal den passenden Shell-Befehl – z. B. `cp -R …`, `scp …`, `docker cp …` oder `aws s3 cp …` – und danach das Ergebnis („fertig“, „fehlgeschlagen: …“). In den Papierkorb legen erscheint als `mv … ~/.Trash/`, endgültiges Löschen als `rm -r …`.

@@ -45,6 +45,13 @@ El terminal se ejecuta donde está el panel:
 
 Clic derecho → **Abrir shell en el contenedor** inicia una shell en la carpeta del contenedor que estás viendo.
 
+### `ssh` en el terminal local {#ssh-erkennen}
+
+Si escribes `ssh` tú mismo en el terminal local (p. ej., `ssh anna@servidor` o un host de tu `~/.ssh/config`), Manta lo detecta. Mientras la conexión está activa, aparece **Abrir anna@servidor en el panel** arriba a la derecha del terminal. Al hacer clic, el panel muestra el servidor por SFTP: Manta reutiliza una conexión abierta con él, si no un favorito que coincida y, si no, abre el diálogo de conexión ya rellenado (solo introduces la contraseña). A partir de ahí, el panel y el terminal se siguen como con un contenedor, y puedes copiar y trasladar entre los paneles.
+
+- El terminal inicia entonces su propia shell en el servidor; con inicio de sesión por contraseña, la vuelve a pedir allí. La sesión `ssh` que escribiste sigue en segundo plano hasta que vuelvas a la carpeta local.
+- `ssh` se detecta en zsh (la shell predeterminada de macOS), también mediante un alias. `ssh` con un comando detrás (`ssh servidor uptime`) o solo para un túnel (`-N`) no ofrece nada.
+
 ## Acciones de archivo en el terminal {#dateiaktionen}
 
 Cuando copias, mueves, eliminas o renombras algo en Manta, el terminal muestra el comando de shell equivalente (como `cp -R …`, `scp …`, `docker cp …` o `aws s3 cp …`) seguido del resultado (“listo”, “error: …”). Trasladar a la papelera aparece como `mv … ~/.Trash/` y una eliminación definitiva como `rm -r …`.

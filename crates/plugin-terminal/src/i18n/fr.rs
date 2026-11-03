@@ -20,6 +20,7 @@ pub const ENTRIES: Translations = &[
     ("term.remote.retry_hint", "Cliquez pour réessayer."),
     ("term.error.start", "Impossible de démarrer le shell\u{a0}: {error}"),
     ("term.toast.settings_not_saved", "Les réglages du Terminal n’ont pas été enregistrés\u{a0}: {error}"),
+    ("term.ssh.open", "Ouvrir {target} dans la sous-fenêtre"),
     ("term.pill.run", "Exécutera «\u{a0}{command}\u{a0}» dès que le shell sera prêt"),
     ("term.pill.cd", "Ira dans «\u{a0}{name}\u{a0}» dès que le shell sera prêt"),
     ("term.pill.cd_and_show", "Ira dans «\u{a0}{name}\u{a0}» et affichera {actions} dès que le shell sera prêt"),

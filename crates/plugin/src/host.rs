@@ -326,6 +326,14 @@ pub enum HostEvent {
     Refresh {
         pane: Option<PaneId>,
     },
+    /// A plugin asked to show this SFTP server in `pane`
+    /// ([`HostRequest::OpenSftp`]).
+    OpenSftp {
+        pane: PaneId,
+        user: String,
+        host: String,
+        port: u16,
+    },
     /// A plugin asked for the bytes of `path` in `pane`'s backend (`max_bytes`
     /// already capped). Read it in the background, then answer with
     /// [`PluginHost::deliver`] and [`PluginEvent::FileContent`].
@@ -1289,6 +1297,17 @@ impl PluginHost {
                 self.run_in_terminal(pane, command, cwd)
             }
             HostRequest::RefreshPane { pane } => self.out.push(HostEvent::Refresh { pane }),
+            HostRequest::OpenSftp {
+                pane,
+                user,
+                host,
+                port,
+            } => self.out.push(HostEvent::OpenSftp {
+                pane,
+                user,
+                host,
+                port,
+            }),
             HostRequest::ReadFile {
                 pane,
                 path,

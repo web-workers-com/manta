@@ -819,6 +819,16 @@ pub enum HostRequest {
     /// List the folder of `pane` again (`None` = both panes), e.g. after a
     /// command changed files there.
     RefreshPane { pane: Option<PaneId> },
+    /// Show the SFTP server `user@host:port` in `pane`, e.g. the one an
+    /// `ssh` in the Terminal logged in to: an open connection to it, else a
+    /// matching favorite, else the Connect dialog filled in. Built-in
+    /// plugins only (not part of the external protocol).
+    OpenSftp {
+        pane: PaneId,
+        user: String,
+        host: String,
+        port: u16,
+    },
     /// Read up to `max_bytes` of the file `path` in `pane`'s backend (local
     /// or remote), in the background. Answered with
     /// [`PluginEvent::FileContent`]. The host caps `max_bytes` at

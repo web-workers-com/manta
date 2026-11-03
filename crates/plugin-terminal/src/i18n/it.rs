@@ -20,6 +20,7 @@ pub const ENTRIES: Translations = &[
     ("term.remote.retry_hint", "Fai clic per riprovare."),
     ("term.error.start", "Impossibile avviare la shell: {error}"),
     ("term.toast.settings_not_saved", "Impostazioni del Terminale non salvate: {error}"),
+    ("term.ssh.open", "Apri {target} nel pannello"),
     ("term.pill.run", "Eseguirà “{command}” quando la shell è pronta"),
     ("term.pill.cd", "Passerà a “{name}” quando la shell è pronta"),
     ("term.pill.cd_and_show", "Passerà a “{name}” e mostrerà {actions} quando la shell è pronta"),

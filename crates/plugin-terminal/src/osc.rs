@@ -24,6 +24,10 @@ pub enum OscEvent {
     },
     /// OSC 133;C: a command line was submitted and is about to run.
     CommandStart,
+    /// Private OSC 7702: the zsh shim reports a command line that mentions
+    /// `ssh` just before it runs (so the terminal can offer to open that
+    /// server in the pane).
+    Command(String),
     /// Private OSC 7701;s / 7701;e: the shim wraps zsh's RPROMPT in these
     /// zero-width markers so we know exactly which cells are the right
     /// prompt (see `session::Shared`).
@@ -138,6 +142,11 @@ fn parse_osc(payload: &[u8]) -> Option<OscEvent> {
         b"7701;s" => return Some(OscEvent::RpromptStart),
         b"7701;e" => return Some(OscEvent::RpromptEnd),
         _ => {}
+    }
+    if let Some(rest) = payload.strip_prefix(b"7702;") {
+        return Some(OscEvent::Command(
+            String::from_utf8_lossy(rest).into_owned(),
+        ));
     }
     if let Some(rest) = payload.strip_prefix(b"7;") {
         let s = std::str::from_utf8(rest).ok()?;
@@ -329,6 +338,13 @@ mod tests {
                     push: true,
                     echo: true
                 }
+            ]
+        );
+        assert_eq!(
+            s.feed(b"\x1b]133;C\x07\x1b]7702;ssh -p 2222 web\x07"),
+            vec![
+                OscEvent::CommandStart,
+                OscEvent::Command("ssh -p 2222 web".into())
             ]
         );
         assert_eq!(
