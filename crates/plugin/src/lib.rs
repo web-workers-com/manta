@@ -829,6 +829,15 @@ pub enum HostRequest {
         host: String,
         port: u16,
     },
+    /// The shell in the Terminal below `pane` was left (`exit`) while the
+    /// pane showed `remote`: the pane goes back to this Mac, and a
+    /// connection no other tab shows is closed (an SMB share Manta mounted
+    /// is ejected). Ignored once the pane shows something else. Built-in
+    /// plugins only (not part of the external protocol).
+    LeaveConnection {
+        pane: PaneId,
+        remote: RemoteEndpoint,
+    },
     /// Read up to `max_bytes` of the file `path` in `pane`'s backend (local
     /// or remote), in the background. Answered with
     /// [`PluginEvent::FileContent`]. The host caps `max_bytes` at

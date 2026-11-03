@@ -3834,6 +3834,41 @@ impl MantaApp {
         tab.pending_select = target.select;
     }
 
+    /// The shell in the pane's Terminal was left with `exit` while the pane
+    /// showed a connection: the pane goes back to where it was on this Mac
+    /// (else the home folder), and the connection is closed unless another
+    /// tab still shows it.
+    pub(crate) fn leave_connection(&mut self, side: Side) {
+        let Some(id) = self.pane(side).tab().loc.conn else {
+            return;
+        };
+        let local = self
+            .pane(side)
+            .tab()
+            .back
+            .iter()
+            .rev()
+            .find(|l| l.conn.is_none() && l.archive.is_none())
+            .cloned()
+            .unwrap_or_else(|| Location {
+                fs: self.local.clone(),
+                conn: None,
+                path: dirs::home_dir()
+                    .map(|h| local_vfs_path(&h))
+                    .unwrap_or_else(VfsPath::root),
+                archive: None,
+            });
+        self.navigate(side, local, false);
+        let shown = self
+            .panes
+            .iter()
+            .flat_map(|p| &p.tabs)
+            .any(|t| t.loc.conn == Some(id));
+        if !shown {
+            self.disconnect(id);
+        }
+    }
+
     fn disconnect(&mut self, id: u64) {
         let Some(pos) = self.connections.iter().position(|c| c.id == id) else {
             return;
@@ -5022,6 +5057,7 @@ impl MantaApp {
                 | HostEvent::ReadFile { pane, .. }
                 | HostEvent::Navigate { pane, .. }
                 | HostEvent::OpenSftp { pane, .. }
+                | HostEvent::LeaveConnection { pane }
                 | HostEvent::Select { pane, .. }
                 | HostEvent::Refresh { pane: Some(pane) } => {
                     (!self.has_pane(*pane)).then_some(*pane)
@@ -5085,6 +5121,7 @@ impl MantaApp {
                     host,
                     port,
                 } => self.open_sftp(pane, user, host, port),
+                HostEvent::LeaveConnection { pane } => self.leave_connection(pane),
                 HostEvent::Select { pane, dir, names } => {
                     let side = pane;
                     self.activate(side);

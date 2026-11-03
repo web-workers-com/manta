@@ -16,7 +16,7 @@ Más comandos en la paleta de comandos:
 - **Nueva sesión de terminal**: inicia una shell nueva.
 - **Borrar terminal**: limpia la pantalla.
 
-Si cierras la shell (con `exit`, por ejemplo), el terminal muestra “[Proceso finalizado: pulsa Retorno para reiniciar]”.
+Si cierras la shell (con `exit`, por ejemplo), el terminal muestra “[Proceso finalizado: pulsa Retorno para reiniciar]”. Si el panel muestra un servidor o un recurso compartido (SFTP, SMB, Docker, Kubernetes), `exit` también lo abandona allí: el panel vuelve a la carpeta de tu Mac que mostraba antes y la conexión se cierra, salvo que otra pestaña aún la muestre. Si la shell se interrumpe (conexión perdida, contenedor detenido), el panel se queda donde está.
 
 ## El panel y el terminal se siguen mutuamente {#folgen}
 

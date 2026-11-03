@@ -16,7 +16,7 @@ Weitere Befehle in der Befehlspalette:
 - **Neue Terminal-Sitzung** – startet eine frische Shell.
 - **Terminal leeren** – leert die Anzeige.
 
-Beendest du die Shell (z. B. mit `exit`), zeigt das Terminal „[Prozess beendet – zum Neustarten den Zeilenschalter drücken]“.
+Beendest du die Shell (z. B. mit `exit`), zeigt das Terminal „[Prozess beendet – zum Neustarten den Zeilenschalter drücken]“. Zeigt der Bereich einen Server oder eine Freigabe (SFTP, SMB, Docker, Kubernetes), trennt `exit` auch dort: Der Bereich geht zurück zum Ordner auf deinem Mac, in dem er vorher war, und die Verbindung wird geschlossen, sofern kein anderer Tab sie noch zeigt. Bricht die Shell dagegen ab (Verbindung verloren, Container gestoppt), bleibt der Bereich, wo er ist.
 
 ## Bereich und Terminal folgen einander {#folgen}
 

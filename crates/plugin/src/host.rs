@@ -334,6 +334,11 @@ pub enum HostEvent {
         host: String,
         port: u16,
     },
+    /// The Terminal's shell in `pane` was left while it showed a connection
+    /// ([`HostRequest::LeaveConnection`]).
+    LeaveConnection {
+        pane: PaneId,
+    },
     /// A plugin asked for the bytes of `path` in `pane`'s backend (`max_bytes`
     /// already capped). Read it in the background, then answer with
     /// [`PluginHost::deliver`] and [`PluginEvent::FileContent`].
@@ -1308,6 +1313,16 @@ impl PluginHost {
                 host,
                 port,
             }),
+            HostRequest::LeaveConnection { pane, remote } => {
+                // Only while the pane still shows that server or share.
+                if self
+                    .panes
+                    .get(&pane)
+                    .is_some_and(|p| p.remote.as_ref() == Some(&remote))
+                {
+                    self.out.push(HostEvent::LeaveConnection { pane });
+                }
+            }
             HostRequest::ReadFile {
                 pane,
                 path,
@@ -2934,6 +2949,49 @@ mod tests {
             plugins,
             Some(HostPaths::under(root)),
         )
+    }
+
+    #[test]
+    fn leave_connection_only_while_the_pane_shows_it() {
+        let tmp = tempfile::tempdir().unwrap();
+        let log = Arc::new(Log::default());
+        let mut host = host_with(vec![Box::new(Fake::new(TERMINAL_PLUGIN, log))], tmp.path());
+        let nas = crate::RemoteEndpoint {
+            protocol: Protocol::Smb,
+            user: "anna".into(),
+            host: "nas.local".into(),
+            port: 445,
+            context: String::new(),
+        };
+        let mut left = pane(PaneId::Left, "/Volumes/media", true);
+        left.protocol = Protocol::Smb;
+        left.remote = Some(nas.clone());
+        host.set_pane(left, 1);
+        host.set_pane(pane(PaneId::Right, "/y", false), 1);
+        host.poll();
+        let tx = host.tx.clone();
+        let send = |r: HostRequest| tx.send((TERMINAL_PLUGIN.into(), r)).unwrap();
+        send(HostRequest::LeaveConnection {
+            pane: PaneId::Left,
+            remote: nas.clone(),
+        });
+        assert_eq!(
+            host.poll(),
+            vec![HostEvent::LeaveConnection { pane: PaneId::Left }]
+        );
+        // The other pane is local; another share: dropped.
+        send(HostRequest::LeaveConnection {
+            pane: PaneId::Right,
+            remote: nas.clone(),
+        });
+        send(HostRequest::LeaveConnection {
+            pane: PaneId::Left,
+            remote: crate::RemoteEndpoint {
+                host: "backup.local".into(),
+                ..nas
+            },
+        });
+        assert!(host.poll().is_empty());
     }
 
     #[test]

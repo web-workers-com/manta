@@ -16,7 +16,7 @@ More commands in the command palette:
 - **New Terminal Session** – starts a fresh shell.
 - **Clear Terminal** – clears the display.
 
-If you end the shell (with `exit`, for example), the terminal shows "[Process exited — press Enter to restart]".
+If you end the shell (with `exit`, for example), the terminal shows "[Process exited — press Enter to restart]". If the pane shows a server or share (SFTP, SMB, Docker, Kubernetes), `exit` leaves it there too: the pane goes back to the folder on your Mac it showed before, and the connection closes unless another tab still shows it. If the shell breaks off instead (connection lost, container stopped), the pane stays where it is.
 
 ## Pane and terminal follow each other {#folgen}
 

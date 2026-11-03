@@ -118,6 +118,8 @@ pub struct Shared {
     pub remote_host: Option<String>,
     /// Exit description once the shell is gone.
     pub exited: Option<String>,
+    /// The shell's exit code (`None` while it runs or after a signal).
+    pub exit_code: Option<u32>,
     exit_note_shown: bool,
     /// Bumped on every chunk of output.
     pub output_seq: u64,
@@ -384,6 +386,7 @@ fn new_shared(size: GridSize, scrollback: usize, listener: Listener) -> Shared {
         prompt_count: 0,
         remote_host: None,
         exited: None,
+        exit_code: None,
         exit_note_shown: false,
         output_seq: 0,
         floats: Floats::new(scrollback),
@@ -467,6 +470,8 @@ pub struct Session {
     started: Instant,
     exited_flag: Arc<AtomicBool>,
     exited_at: Option<Instant>,
+    /// [`Self::take_left`] answered already.
+    left_reported: bool,
     threads: Vec<JoinHandle<()>>,
     theme: Arc<Mutex<Theme>>,
     window: Arc<Mutex<WindowSize>>,
@@ -711,6 +716,11 @@ impl Session {
                     .name("terminal-waiter".into())
                     .spawn(move || {
                         let status = child.wait();
+                        let code = status
+                            .as_ref()
+                            .ok()
+                            .filter(|st| st.signal().is_none())
+                            .map(|st| st.exit_code());
                         let text = match status {
                             Ok(st) => match st.signal() {
                                 Some(sig) => format!("signal {sig}"),
@@ -720,6 +730,7 @@ impl Session {
                         };
                         if let Ok(mut s) = shared.lock() {
                             s.exited = Some(text);
+                            s.exit_code = code;
                             s.at_prompt = false;
                         }
                         flag.store(true, Ordering::SeqCst);
@@ -755,6 +766,7 @@ impl Session {
             started: Instant::now(),
             exited_flag,
             exited_at: None,
+            left_reported: false,
             threads,
             theme,
             window,
@@ -787,6 +799,19 @@ impl Session {
 
     pub fn has_exited(&self) -> bool {
         self.exited_flag.load(Ordering::SeqCst)
+    }
+
+    /// True once, after the shell was left on purpose (`exit`, Ctrl-D):
+    /// it had drawn a prompt and ended with an exit code below 128. A
+    /// shell that never started, a dropped `ssh` (255) or a killed
+    /// container (128 + signal) doesn't count.
+    pub fn take_left(&mut self) -> bool {
+        if self.left_reported || !self.has_exited() {
+            return false;
+        }
+        self.left_reported = true;
+        let s = self.lock();
+        s.prompt_count > 0 && s.exit_code.is_some_and(|c| c < 128)
     }
 
     /// Send input to the shell.

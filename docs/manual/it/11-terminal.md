@@ -16,7 +16,7 @@ Altri comandi nella palette dei comandi:
 - **Nuova sessione Terminale**: avvia una nuova shell.
 - **Pulisci Terminale**: pulisce lo schermo.
 
-Se chiudi la shell (ad esempio con `exit`), il terminale mostra “[Processo terminato – premi A capo per riavviare]”.
+Se chiudi la shell (ad esempio con `exit`), il terminale mostra “[Processo terminato – premi A capo per riavviare]”. Se il pannello mostra un server o una condivisione (SFTP, SMB, Docker, Kubernetes), `exit` lo lascia anche lì: il pannello torna alla cartella del Mac che mostrava prima e la connessione si chiude, a meno che un’altra scheda la mostri ancora. Se invece la shell si interrompe (connessione persa, container fermato), il pannello resta dov’è.
 
 ## Pannello e terminale si seguono a vicenda {#folgen}
 

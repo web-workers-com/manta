@@ -16,7 +16,7 @@ Autres commandes dans la palette de commandes :
 - **Nouvelle session Terminal** – démarre un nouveau shell.
 - **Effacer le Terminal** – efface l’affichage.
 
-Si vous mettez fin au shell (avec `exit`, par exemple), le terminal affiche « [Processus terminé — appuyez sur Retour pour redémarrer] ».
+Si vous mettez fin au shell (avec `exit`, par exemple), le terminal affiche « [Processus terminé — appuyez sur Retour pour redémarrer] ». Si la sous-fenêtre affiche un serveur ou un partage (SFTP, SMB, Docker, Kubernetes), `exit` le quitte aussi : la sous-fenêtre revient au dossier de votre Mac qu’elle affichait avant, et la connexion se ferme, sauf si un autre onglet l’affiche encore. Si le shell s’interrompt (connexion perdue, conteneur arrêté), la sous-fenêtre reste où elle est.
 
 ## La sous-fenêtre et le terminal se suivent mutuellement {#folgen}
 

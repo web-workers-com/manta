@@ -791,6 +791,17 @@ impl TerminalPlugin {
             ui.ctx().set_cursor_icon(egui::CursorIcon::Text);
         }
 
+        // `exit` in the shell of a server or share: the pane leaves it too
+        // (not for the dimmed shell left over below S3, FTP, archives).
+        if !remote && session.take_left() {
+            if let Some(remote) = pane.remote.clone() {
+                handle.send(HostRequest::LeaveConnection {
+                    pane: pane.pane,
+                    remote,
+                });
+            }
+        }
+
         // Input.
         let exited = session.has_exited();
         let out = {
