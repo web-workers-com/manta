@@ -10,7 +10,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
 
 use eframe::egui;
-use manta_core::{ConnectionConfig, Entry, SharedVfs, VfsPath};
+use manta_core::{ConnectionConfig, Entry, SharedVfs, VfsPath, VfsResult};
 use manta_ops::CompareItem;
 
 use crate::app::Side;
@@ -225,6 +225,21 @@ impl Worker {
 
     pub fn poll(&self) -> Vec<WorkResult> {
         self.rx.try_iter().collect()
+    }
+}
+
+/// Blocking: `op` on `fs`; after a network error the backend logs in
+/// again and `op` runs once more. A session that died while Manta sat
+/// idle (Wi-Fi gone, laptop asleep) is otherwise reused by every reload
+/// and every new tab on that connection.
+pub fn with_reconnect<T>(fs: &SharedVfs, mut op: impl FnMut() -> VfsResult<T>) -> VfsResult<T> {
+    match op() {
+        Err(e) if e.is_transient() => {
+            log::info!("{}: {e}; reconnecting", fs.label());
+            fs.reconnect()?;
+            op()
+        }
+        r => r,
     }
 }
 

@@ -697,7 +697,7 @@ fn spawn_listing(worker: &Worker, tab: &mut Tab, path: Option<VfsPath>) {
         move || {
             let dir = match path {
                 Some(p) => p,
-                None => fs.home().map_err(|e| e.to_string())?,
+                None => worker::with_reconnect(&fs, || fs.home()).map_err(|e| e.to_string())?,
             };
             let start = Instant::now();
             let mut entries: Vec<manta_core::Entry> = Vec::new();
@@ -709,19 +709,23 @@ fn spawn_listing(worker: &Worker, tab: &mut Tab, path: Option<VfsPath>) {
                 v.sort_unstable_by(|a, b| util::compare_entries(a, b, sort, &no_sizes));
                 v
             };
-            fs.list_parts(&dir, &mut |part| {
-                entries.extend(part);
-                if !shown && (entries.len() >= PART_MIN || start.elapsed() >= PART_FIRST_AFTER) {
-                    shown = true;
-                    // Sorted in place: the final sort then finds most of
-                    // the listing in order already.
-                    entries = sorted(std::mem::take(&mut entries));
-                    send(WorkResult::ListingPart {
-                        tab_id,
-                        gen,
-                        entries: entries.clone(),
-                    });
-                }
+            worker::with_reconnect(&fs, || {
+                entries.clear();
+                fs.list_parts(&dir, &mut |part| {
+                    entries.extend(part);
+                    if !shown && (entries.len() >= PART_MIN || start.elapsed() >= PART_FIRST_AFTER)
+                    {
+                        shown = true;
+                        // Sorted in place: the final sort then finds most of
+                        // the listing in order already.
+                        entries = sorted(std::mem::take(&mut entries));
+                        send(WorkResult::ListingPart {
+                            tab_id,
+                            gen,
+                            entries: entries.clone(),
+                        });
+                    }
+                })
             })
             .map_err(|e| e.to_string())?;
             Ok((dir, sorted(entries)))
@@ -5635,7 +5639,7 @@ impl MantaApp {
         let job_dir = dir.clone();
         self.worker.spawn(
             "plugin-list",
-            move || fs.list(&job_dir).map_err(|e| e.to_string()),
+            move || worker::with_reconnect(&fs, || fs.list(&job_dir)).map_err(|e| e.to_string()),
             move |result| WorkResult::PluginListing {
                 plugin,
                 pane,

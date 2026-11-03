@@ -1811,7 +1811,8 @@ fn columns_loader(
                 skipped.push(r.path);
                 continue;
             }
-            let result = fs.list(&r.path).map_err(|e| e.to_string());
+            let result =
+                crate::worker::with_reconnect(&fs, || fs.list(&r.path)).map_err(|e| e.to_string());
             if tx
                 .send(ColDone {
                     path: r.path,

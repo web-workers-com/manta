@@ -3567,6 +3567,9 @@ mod new_tabs_ux_tests;
 #[path = "ssh_offer_ux_tests.rs"]
 mod ssh_offer_ux_tests;
 
+#[path = "reconnect_ux_tests.rs"]
+mod reconnect_ux_tests;
+
 #[path = "views_ux_tests.rs"]
 mod views_ux_tests;
 
